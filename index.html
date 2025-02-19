@@ -3,141 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motion Sensor Capture</title>
-    <script src="https://unpkg.com/@opentelemetry/api/build/bundle.min.js"></script>
-    <script src="https://unpkg.com/@opentelemetry/core/build/bundle.min.js"></script>
-    <script src="https://unpkg.com/@opentelemetry/sdk-metrics/build/bundle.min.js"></script>
-    <script src="https://unpkg.com/@opentelemetry/exporter-metrics-otlp-http/build/bundle.min.js"></script>
+    <title>Motion & Telemetry Capture</title>
 </head>
 <body>
-    <h1>Device Motion and GPS Data</h1>
-    <button id="requestPermission">Enable Sensors</button>
-    <button id="pauseTracking">Pause Sensors</button>
-    <label for="interval">Telemetry Interval (ms):</label>
-    <input type="number" id="interval" value="1000" min="100">
+    <h1>Motion & Telemetry Capture</h1>
+
     <label for="token">SignalFx Token:</label>
     <input type="text" id="token" placeholder="Enter your token">
-    <p>Accelerometer: <span id="accel"></span></p>
-    <p>Gyroscope: <span id="gyro"></span></p>
-    <p>GPS: <span id="gps"></span></p>
 
-    <script>
-        const { MeterProvider } = opentelemetry;
-        const { OTLPMetricExporter } = opentelemetry;
+    <label for="interval">Telemetry Interval (ms):</label>
+    <input type="number" id="interval" value="1000">
 
-        function getToken() {
-            return document.getElementById('token').value;
-        }
+    <button id="requestPermission">Request Motion Permission</button>
+    <button id="pauseTracking">Pause Sensors</button>
 
-        function createExporter() {
-            return new OTLPMetricExporter({
-                url: "https://ingest.eu0.signalfx.com/v2/datapoint/otlp",
-                headers: {
-                    "Content-Type": "application/x-protobuf",
-                    "X-SF-Token": getToken()
-                }
-            });
-        }
+    <h2>Sensor Data</h2>
+    <p><strong>Accelerometer:</strong> <span id="accel">Waiting...</span></p>
+    <p><strong>Gyroscope:</strong> <span id="gyro">Waiting...</span></p>
+    <p><strong>GPS:</strong> <span id="gps">Waiting...</span></p>
 
-        let exporter = createExporter();
-        const meterProvider = new MeterProvider();
-        meterProvider.addMetricReader(exporter);
-        const meter = meterProvider.getMeter('motion-sensor');
-
-        const accelXMetric = meter.createObservableGauge('accelerometer_x');
-        const accelYMetric = meter.createObservableGauge('accelerometer_y');
-        const accelZMetric = meter.createObservableGauge('accelerometer_z');
-        const gyroAlphaMetric = meter.createObservableGauge('gyroscope_alpha');
-        const gyroBetaMetric = meter.createObservableGauge('gyroscope_beta');
-        const gyroGammaMetric = meter.createObservableGauge('gyroscope_gamma');
-        const gpsLatMetric = meter.createObservableGauge('gps_latitude');
-        const gpsLonMetric = meter.createObservableGauge('gps_longitude');
-
-        let telemetryInterval = 1000;
-        let trackingActive = false;
-        let motionInterval, orientationInterval, gpsInterval;
-
-        document.getElementById('requestPermission').addEventListener('click', () => {
-            if (typeof DeviceMotionEvent.requestPermission === 'function') {
-                DeviceMotionEvent.requestPermission().then(permissionState => {
-                    if (permissionState === 'granted') {
-                        startTracking();
-                    } else {
-                        alert('Motion permission denied');
-                    }
-                }).catch(console.error);
-            } else {
-                startTracking();
-            }
-        });
-
-        document.getElementById('interval').addEventListener('change', (event) => {
-            telemetryInterval = parseInt(event.target.value) || 1000;
-            if (trackingActive) {
-                stopTracking();
-                startTracking();
-            }
-        });
-
-        document.getElementById('pauseTracking').addEventListener('click', () => {
-            if (trackingActive) {
-                stopTracking();
-                document.getElementById('pauseTracking').textContent = 'Resume Sensors';
-            } else {
-                startTracking();
-                document.getElementById('pauseTracking').textContent = 'Pause Sensors';
-            }
-        });
-
-        function startTracking() {
-            trackingActive = true;
-            exporter = createExporter();
-
-            if (window.DeviceMotionEvent) {
-                motionInterval = setInterval(() => {
-                    window.addEventListener('devicemotion', (event) => {
-                        let accel = event.accelerationIncludingGravity;
-                        document.getElementById('accel').textContent =
-                            `X: ${accel.x.toFixed(2)}, Y: ${accel.y.toFixed(2)}, Z: ${accel.z.toFixed(2)}`;
-                        accelXMetric.addCallback(observer => observer.observe(accel.x));
-                        accelYMetric.addCallback(observer => observer.observe(accel.y));
-                        accelZMetric.addCallback(observer => observer.observe(accel.z));
-                    }, { once: true });
-                }, telemetryInterval);
-            }
-
-            if (window.DeviceOrientationEvent) {
-                orientationInterval = setInterval(() => {
-                    window.addEventListener('deviceorientation', (event) => {
-                        document.getElementById('gyro').textContent =
-                            `Alpha: ${event.alpha.toFixed(2)}, Beta: ${event.beta.toFixed(2)}, Gamma: ${event.gamma.toFixed(2)}`;
-                        gyroAlphaMetric.addCallback(observer => observer.observe(event.alpha));
-                        gyroBetaMetric.addCallback(observer => observer.observe(event.beta));
-                        gyroGammaMetric.addCallback(observer => observer.observe(event.gamma));
-                    }, { once: true });
-                }, telemetryInterval);
-            }
-
-            if (navigator.geolocation) {
-                gpsInterval = setInterval(() => {
-                    navigator.geolocation.getCurrentPosition((position) => {
-                        document.getElementById('gps').textContent =
-                            `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
-                        gpsLatMetric.addCallback(observer => observer.observe(position.coords.latitude));
-                        gpsLonMetric.addCallback(observer => observer.observe(position.coords.longitude));
-                    }, (error) => {
-                        document.getElementById('gps').textContent = `GPS Error: ${error.message}`;
-                    });
-                }, telemetryInterval);
-            }
-        }
-
-        function stopTracking() {
-            trackingActive = false;
-            clearInterval(motionInterval);
-            clearInterval(orientationInterval);
-            clearInterval(gpsInterval);
-        }
-    </script>
+    <script src="motion_capture.js"></script>
 </body>
 </html>
