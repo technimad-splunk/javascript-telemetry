@@ -6,27 +6,28 @@
     <title>Motion Sensor Capture</title>
 </head>
 <body>
-    <h1>Device Motion Data</h1>
-    <button id="requestPermission">Enable Motion Sensors</button>
+    <h1>Device Motion and GPS Data</h1>
+    <button id="requestPermission">Enable Sensors</button>
     <p>Accelerometer: <span id="accel"></span></p>
     <p>Gyroscope: <span id="gyro"></span></p>
+    <p>GPS: <span id="gps"></span></p>
 
     <script>
         document.getElementById('requestPermission').addEventListener('click', () => {
             if (typeof DeviceMotionEvent.requestPermission === 'function') {
                 DeviceMotionEvent.requestPermission().then(permissionState => {
                     if (permissionState === 'granted') {
-                        startMotionTracking();
+                        startTracking();
                     } else {
-                        alert('Permission denied');
+                        alert('Motion permission denied');
                     }
                 }).catch(console.error);
             } else {
-                startMotionTracking();
+                startTracking();
             }
         });
 
-        function startMotionTracking() {
+        function startTracking() {
             if (window.DeviceMotionEvent) {
                 window.addEventListener('devicemotion', (event) => {
                     let accel = event.accelerationIncludingGravity;
@@ -44,6 +45,17 @@
                 });
             } else {
                 document.getElementById('gyro').textContent = 'DeviceOrientationEvent not supported';
+            }
+
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition((position) => {
+                    document.getElementById('gps').textContent =
+                        `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
+                }, (error) => {
+                    document.getElementById('gps').textContent = `GPS Error: ${error.message}`;
+                });
+            } else {
+                document.getElementById('gps').textContent = 'Geolocation not supported';
             }
         }
     </script>
