@@ -7,27 +7,44 @@
 </head>
 <body>
     <h1>Device Motion Data</h1>
+    <button id="requestPermission">Enable Motion Sensors</button>
     <p>Accelerometer: <span id="accel"></span></p>
     <p>Gyroscope: <span id="gyro"></span></p>
 
     <script>
-        if (window.DeviceMotionEvent) {
-            window.addEventListener('devicemotion', (event) => {
-                let accel = event.accelerationIncludingGravity;
-                document.getElementById('accel').textContent =
-                    `X: ${accel.x.toFixed(2)}, Y: ${accel.y.toFixed(2)}, Z: ${accel.z.toFixed(2)}`;
-            });
-        } else {
-            document.getElementById('accel').textContent = 'DeviceMotionEvent not supported';
-        }
+        document.getElementById('requestPermission').addEventListener('click', () => {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission().then(permissionState => {
+                    if (permissionState === 'granted') {
+                        startMotionTracking();
+                    } else {
+                        alert('Permission denied');
+                    }
+                }).catch(console.error);
+            } else {
+                startMotionTracking();
+            }
+        });
 
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (event) => {
-                document.getElementById('gyro').textContent =
-                    `Alpha: ${event.alpha.toFixed(2)}, Beta: ${event.beta.toFixed(2)}, Gamma: ${event.gamma.toFixed(2)}`;
-            });
-        } else {
-            document.getElementById('gyro').textContent = 'DeviceOrientationEvent not supported';
+        function startMotionTracking() {
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', (event) => {
+                    let accel = event.accelerationIncludingGravity;
+                    document.getElementById('accel').textContent =
+                        `X: ${accel.x.toFixed(2)}, Y: ${accel.y.toFixed(2)}, Z: ${accel.z.toFixed(2)}`;
+                });
+            } else {
+                document.getElementById('accel').textContent = 'DeviceMotionEvent not supported';
+            }
+
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (event) => {
+                    document.getElementById('gyro').textContent =
+                        `Alpha: ${event.alpha.toFixed(2)}, Beta: ${event.beta.toFixed(2)}, Gamma: ${event.gamma.toFixed(2)}`;
+                });
+            } else {
+                document.getElementById('gyro').textContent = 'DeviceOrientationEvent not supported';
+            }
         }
     </script>
 </body>
