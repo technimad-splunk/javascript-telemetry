@@ -8,11 +8,15 @@
 <body>
     <h1>Device Motion and GPS Data</h1>
     <button id="requestPermission">Enable Sensors</button>
+    <label for="interval">Telemetry Interval (ms):</label>
+    <input type="number" id="interval" value="1000" min="100">
     <p>Accelerometer: <span id="accel"></span></p>
     <p>Gyroscope: <span id="gyro"></span></p>
     <p>GPS: <span id="gps"></span></p>
 
     <script>
+        let telemetryInterval = 1000;
+
         document.getElementById('requestPermission').addEventListener('click', () => {
             if (typeof DeviceMotionEvent.requestPermission === 'function') {
                 DeviceMotionEvent.requestPermission().then(permissionState => {
@@ -27,33 +31,43 @@
             }
         });
 
+        document.getElementById('interval').addEventListener('change', (event) => {
+            telemetryInterval = parseInt(event.target.value) || 1000;
+        });
+
         function startTracking() {
             if (window.DeviceMotionEvent) {
-                window.addEventListener('devicemotion', (event) => {
-                    let accel = event.accelerationIncludingGravity;
-                    document.getElementById('accel').textContent =
-                        `X: ${accel.x.toFixed(2)}, Y: ${accel.y.toFixed(2)}, Z: ${accel.z.toFixed(2)}`;
-                });
+                setInterval(() => {
+                    window.addEventListener('devicemotion', (event) => {
+                        let accel = event.accelerationIncludingGravity;
+                        document.getElementById('accel').textContent =
+                            `X: ${accel.x.toFixed(2)}, Y: ${accel.y.toFixed(2)}, Z: ${accel.z.toFixed(2)}`;
+                    }, { once: true });
+                }, telemetryInterval);
             } else {
                 document.getElementById('accel').textContent = 'DeviceMotionEvent not supported';
             }
 
             if (window.DeviceOrientationEvent) {
-                window.addEventListener('deviceorientation', (event) => {
-                    document.getElementById('gyro').textContent =
-                        `Alpha: ${event.alpha.toFixed(2)}, Beta: ${event.beta.toFixed(2)}, Gamma: ${event.gamma.toFixed(2)}`;
-                });
+                setInterval(() => {
+                    window.addEventListener('deviceorientation', (event) => {
+                        document.getElementById('gyro').textContent =
+                            `Alpha: ${event.alpha.toFixed(2)}, Beta: ${event.beta.toFixed(2)}, Gamma: ${event.gamma.toFixed(2)}`;
+                    }, { once: true });
+                }, telemetryInterval);
             } else {
                 document.getElementById('gyro').textContent = 'DeviceOrientationEvent not supported';
             }
 
             if (navigator.geolocation) {
-                navigator.geolocation.watchPosition((position) => {
-                    document.getElementById('gps').textContent =
-                        `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
-                }, (error) => {
-                    document.getElementById('gps').textContent = `GPS Error: ${error.message}`;
-                });
+                setInterval(() => {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        document.getElementById('gps').textContent =
+                            `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
+                    }, (error) => {
+                        document.getElementById('gps').textContent = `GPS Error: ${error.message}`;
+                    });
+                }, telemetryInterval);
             } else {
                 document.getElementById('gps').textContent = 'Geolocation not supported';
             }
