@@ -7233,6 +7233,7 @@
 
   // motion_capture.ts
   var tokenInput = document.getElementById("token");
+  var endpointInput = document.getElementById("endpoint");
   var intervalInput = document.getElementById("interval");
   var accelDisplay = document.getElementById("accel");
   var gyroDisplay = document.getElementById("gyro");
@@ -7245,9 +7246,12 @@
   function getToken() {
     return tokenInput.value;
   }
+  function getEndpoint() {
+    return endpointInput.value || "https://ingest.eu0.signalfx.com/v2/datapoint/otlp";
+  }
   function createExporter() {
     const exporter = new OTLPMetricExporter({
-      url: "https://everyorigin.jwvbremen.nl/get?url=https://ingest.eu0.signalfx.com/v2/datapoint/otlp",
+      url: getEndpoint(),
       headers: {
         "Content-Type": "application/x-protobuf",
         "X-SF-Token": getToken()

@@ -13,6 +13,7 @@ type SensorData = {
 };
 
 const tokenInput = document.getElementById('token') as HTMLInputElement;
+const endpointInput = document.getElementById('endpoint') as HTMLInputElement;
 const intervalInput = document.getElementById('interval') as HTMLInputElement;
 const accelDisplay = document.getElementById('accel');
 const gyroDisplay = document.getElementById('gyro');
@@ -28,9 +29,13 @@ function getToken(): string {
 	return tokenInput.value;
 }
 
+function getEndpoint(): string {
+	return endpointInput.value || "https://ingest.eu0.signalfx.com/v2/datapoint/otlp";
+}
+
 function createExporter(): PeriodicExportingMetricReader {
 	const exporter = new OTLPMetricExporter({
-		url: "https://everyorigin.jwvbremen.nl/get?url=https://ingest.eu0.signalfx.com/v2/datapoint/otlp",
+		url: getEndpoint(),
 		headers: {
 			"Content-Type": "application/x-protobuf",
 			"X-SF-Token": getToken()
