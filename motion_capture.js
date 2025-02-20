@@ -7257,7 +7257,7 @@
         "X-SF-Token": getToken()
       }
     });
-    return new PeriodicExportingMetricReader({ exporter });
+    return new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 1e3 });
   }
   var meterProvider = new MeterProvider();
   meterProvider.addMetricReader(createExporter());

@@ -42,7 +42,7 @@ function createExporter(): PeriodicExportingMetricReader {
 			"X-SF-Token": getToken()
 		}
 	});
-	return new PeriodicExportingMetricReader({ exporter });
+	return new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 1000 });
 }
 
 const meterProvider = new MeterProvider();
