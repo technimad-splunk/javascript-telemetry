@@ -6982,7 +6982,7 @@
   var orientationInterval;
   var gpsInterval;
   function getEndpoint() {
-    return "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/otlp";
+    return "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/default/";
   }
   function createExporter() {
     const exporter = new OTLPMetricExporter({
