@@ -7243,18 +7243,15 @@
   var motionInterval;
   var orientationInterval;
   var gpsInterval;
-  function getToken() {
-    return tokenInput.value;
-  }
   function getEndpoint() {
-    return endpointInput.value || "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/default";
+    return endpointInput.value || "https://2frmh66hqj.execute-api.eu-west-1.amazonaws.com/v2/datapoint/otlp";
   }
   function createExporter() {
     const exporter = new OTLPMetricExporter({
       url: getEndpoint(),
       headers: {
         "Content-Type": "application/x-protobuf",
-        "X-SF-Token": getToken()
+        "X-SF-Token": "XgM_Jx8-OnfDDgKOgDnlAQ"
       }
     });
     return new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 1e3 });

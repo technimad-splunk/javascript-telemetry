@@ -31,7 +31,7 @@ function getToken(): string {
 
 function getEndpoint(): string {
 	//return endpointInput.value || "https://ingest.eu0.signalfx.com/v2/datapoint/otlp";
-	return endpointInput.value || "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/default";
+	return endpointInput.value || "https://2frmh66hqj.execute-api.eu-west-1.amazonaws.com/v2/datapoint/otlp";
 }
 
 function createExporter(): PeriodicExportingMetricReader {
@@ -39,7 +39,7 @@ function createExporter(): PeriodicExportingMetricReader {
 		url: getEndpoint(),
 		headers: {
 			"Content-Type": "application/x-protobuf",
-			"X-SF-Token": getToken()
+			"X-SF-Token": "XgM_Jx8-OnfDDgKOgDnlAQ",
 		}
 	});
 	return new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 1000 });
