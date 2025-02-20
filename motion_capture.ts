@@ -30,7 +30,7 @@ function getToken(): string {
 
 function createExporter(): PeriodicExportingMetricReader {
 	const exporter = new OTLPMetricExporter({
-		url: "https://corsproxy.io/?url=https://ingest.eu0.signalfx.com/v2/datapoint/otlp",
+		url: "https://everyorigin.jwvbremen.nl/get?url=https://ingest.eu0.signalfx.com/v2/datapoint/otlp",
 		headers: {
 			"Content-Type": "application/x-protobuf",
 			"X-SF-Token": getToken()
