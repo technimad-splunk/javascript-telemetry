@@ -7247,7 +7247,7 @@
     return tokenInput.value;
   }
   function getEndpoint() {
-    return endpointInput.value || "https://p4ucy9hve5.execute-api.eu-west-1.amazonaws.com/v2/datapoint/otlp";
+    return endpointInput.value || "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/default/v2/datapoint/otlp";
   }
   function createExporter() {
     const exporter = new OTLPMetricExporter({
