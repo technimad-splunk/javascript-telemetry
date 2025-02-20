@@ -31,14 +31,14 @@ function getToken(): string {
 
 function getEndpoint(): string {
 	//return endpointInput.value || "https://ingest.eu0.signalfx.com/v2/datapoint/otlp";
-	return endpointInput.value || "https://2frmh66hqj.execute-api.eu-west-1.amazonaws.com/v2/datapoint/otlp";
+	return "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/otlp";
 }
 
 function createExporter(): PeriodicExportingMetricReader {
 	const exporter = new OTLPMetricExporter({
 		url: getEndpoint(),
 		headers: {
-			"Content-Type": "application/x-protobuf",
+			"Content-Type": "application/json",
 			"X-SF-Token": "XgM_Jx8-OnfDDgKOgDnlAQ",
 		}
 	});
