@@ -31,7 +31,7 @@ function getToken(): string {
 
 function getEndpoint(): string {
 	//return endpointInput.value || "https://ingest.eu0.signalfx.com/v2/datapoint/otlp";
-	return endpointInput.value || "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/default/v2/datapoint/otlp";
+	return endpointInput.value || "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/default";
 }
 
 function createExporter(): PeriodicExportingMetricReader {
