@@ -1,17 +1,18 @@
 import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { ObservableGauge } from '@opentelemetry/api';
 import { Resource } from '@opentelemetry/resources';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 
 
 type SensorData = {
-	x?: number;
-	y?: number;
-	z?: number;
-	alpha?: number;
-	beta?: number;
-	gamma?: number;
-	latitude?: number;
-	longitude?: number;
+	x?: ObservableGauge;
+	y?: ObservableGauge;
+	z?: ObservableGauge;
+	alpha?: ObservableGauge;
+	beta?: ObservableGauge;
+	gamma?: ObservableGauge;
+	latitude?: ObservableGauge;
+	longitude?: ObservableGauge;
 };
 
 const version = "1.0.0"
@@ -30,6 +31,7 @@ let gpsInterval: number;
 
 let meterProvider = new MeterProvider(); //placeholder for instrumentation after initialisation
 let meter = null; //placeholder for instrumentation after initialisation
+let metrics: SensorData = {};
 
 function getEndpoint(): string {
 	return "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/otlp/";
@@ -53,14 +55,14 @@ function startTelemetry() {
 	meterProvider = new MeterProvider({ resource: resource, readers: [createExporter()] });
 	meter = meterProvider.getMeter('motion-sensor');
 
-	const accelXMetric = meter.createObservableGauge('accelerometer_x');
-	const accelYMetric = meter.createObservableGauge('accelerometer_y');
-	const accelZMetric = meter.createObservableGauge('accelerometer_z');
-	const gyroAlphaMetric = meter.createObservableGauge('gyroscope_alpha');
-	const gyroBetaMetric = meter.createObservableGauge('gyroscope_beta');
-	const gyroGammaMetric = meter.createObservableGauge('gyroscope_gamma');
-	const gpsLatMetric = meter.createObservableGauge('gps_latitude');
-	const gpsLonMetric = meter.createObservableGauge('gps_longitude');
+	metrics.x = meter.createObservableGauge('accelerometer_x');
+	metrics.y = meter.createObservableGauge('accelerometer_y');
+	metrics.z = meter.createObservableGauge('accelerometer_z');
+	metrics.alpha = meter.createObservableGauge('gyroscope_alpha');
+	metrics.beta = meter.createObservableGauge('gyroscope_beta');
+	metrics.gamma = meter.createObservableGauge('gyroscope_gamma');
+	metrics.latitude = meter.createObservableGauge('gps_latitude');
+	metrics.longitude = meter.createObservableGauge('gps_longitude');
 }
 
 function stopTelemetry() {
@@ -111,9 +113,9 @@ function startTracking(): void {
 				if (accelDisplay) {
 					accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)}`;
 				}
-				accelXMetric.addCallback(observer => observer.observe(accel.x || 0));
-				accelYMetric.addCallback(observer => observer.observe(accel.y || 0));
-				accelZMetric.addCallback(observer => observer.observe(accel.z || 0));
+				metrics.x.addCallback(observer => observer.observe(accel.x || 0));
+				metrics.y.addCallback(observer => observer.observe(accel.y || 0));
+				metrics.z.addCallback(observer => observer.observe(accel.z || 0));
 			}, { once: true });
 		}, telemetryInterval);
 	}
@@ -124,9 +126,9 @@ function startTracking(): void {
 				if (gyroDisplay) {
 					gyroDisplay.textContent = `Alpha: ${event.alpha?.toFixed(2)}, Beta: ${event.beta?.toFixed(2)}, Gamma: ${event.gamma?.toFixed(2)}`;
 				}
-				gyroAlphaMetric.addCallback(observer => observer.observe(event.alpha || 0));
-				gyroBetaMetric.addCallback(observer => observer.observe(event.beta || 0));
-				gyroGammaMetric.addCallback(observer => observer.observe(event.gamma || 0));
+				metrics.alpha.addCallback(observer => observer.observe(event.alpha || 0));
+				metrics.beta.addCallback(observer => observer.observe(event.beta || 0));
+				metrics.gamma.addCallback(observer => observer.observe(event.gamma || 0));
 			}, { once: true });
 		}, telemetryInterval);
 	}
@@ -137,8 +139,8 @@ function startTracking(): void {
 				if (gpsDisplay) {
 					gpsDisplay.textContent = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
 				}
-				gpsLatMetric.addCallback(observer => observer.observe(position.coords.latitude));
-				gpsLonMetric.addCallback(observer => observer.observe(position.coords.longitude));
+				metrics.latitude.addCallback(observer => observer.observe(position.coords.latitude));
+				metrics.longitude.addCallback(observer => observer.observe(position.coords.longitude));
 			}, (error) => {
 				if (gpsDisplay) {
 					gpsDisplay.textContent = `GPS Error: ${error.message}`;

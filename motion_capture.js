@@ -6390,13 +6390,13 @@
     };
   }
   function toScopeMetrics(scopeMetrics, encoder) {
-    return Array.from(scopeMetrics.map(function(metrics) {
+    return Array.from(scopeMetrics.map(function(metrics2) {
       return {
-        scope: createInstrumentationScope(metrics.scope),
-        metrics: metrics.metrics.map(function(metricData) {
+        scope: createInstrumentationScope(metrics2.scope),
+        metrics: metrics2.metrics.map(function(metricData) {
           return toMetric(metricData, encoder);
         }),
-        schemaUrl: metrics.scope.schemaUrl
+        schemaUrl: metrics2.scope.schemaUrl
       };
     }));
   }
@@ -6506,8 +6506,8 @@
   }
   function createExportMetricsServiceRequest(resourceMetrics, options) {
     return {
-      resourceMetrics: resourceMetrics.map(function(metrics) {
-        return toResourceMetrics(metrics, options);
+      resourceMetrics: resourceMetrics.map(function(metrics2) {
+        return toResourceMetrics(metrics2, options);
       })
     };
   }
@@ -6991,6 +6991,7 @@
   var gpsInterval;
   var meterProvider = new MeterProvider();
   var meter = null;
+  var metrics = {};
   function getEndpoint() {
     return "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/otlp/";
   }
@@ -7011,14 +7012,14 @@
     });
     meterProvider = new MeterProvider({ resource, readers: [createExporter()] });
     meter = meterProvider.getMeter("motion-sensor");
-    const accelXMetric2 = meter.createObservableGauge("accelerometer_x");
-    const accelYMetric2 = meter.createObservableGauge("accelerometer_y");
-    const accelZMetric2 = meter.createObservableGauge("accelerometer_z");
-    const gyroAlphaMetric2 = meter.createObservableGauge("gyroscope_alpha");
-    const gyroBetaMetric2 = meter.createObservableGauge("gyroscope_beta");
-    const gyroGammaMetric2 = meter.createObservableGauge("gyroscope_gamma");
-    const gpsLatMetric2 = meter.createObservableGauge("gps_latitude");
-    const gpsLonMetric2 = meter.createObservableGauge("gps_longitude");
+    metrics.x = meter.createObservableGauge("accelerometer_x");
+    metrics.y = meter.createObservableGauge("accelerometer_y");
+    metrics.z = meter.createObservableGauge("accelerometer_z");
+    metrics.alpha = meter.createObservableGauge("gyroscope_alpha");
+    metrics.beta = meter.createObservableGauge("gyroscope_beta");
+    metrics.gamma = meter.createObservableGauge("gyroscope_gamma");
+    metrics.latitude = meter.createObservableGauge("gps_latitude");
+    metrics.longitude = meter.createObservableGauge("gps_longitude");
   }
   document.getElementById("requestPermission")?.addEventListener("click", () => {
     if (typeof DeviceMotionEvent.requestPermission === "function") {
@@ -7058,9 +7059,9 @@
           if (accelDisplay) {
             accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)}`;
           }
-          accelXMetric.addCallback((observer) => observer.observe(accel.x || 0));
-          accelYMetric.addCallback((observer) => observer.observe(accel.y || 0));
-          accelZMetric.addCallback((observer) => observer.observe(accel.z || 0));
+          metrics.x.addCallback((observer) => observer.observe(accel.x || 0));
+          metrics.y.addCallback((observer) => observer.observe(accel.y || 0));
+          metrics.z.addCallback((observer) => observer.observe(accel.z || 0));
         }, { once: true });
       }, telemetryInterval);
     }
@@ -7070,9 +7071,9 @@
           if (gyroDisplay) {
             gyroDisplay.textContent = `Alpha: ${event.alpha?.toFixed(2)}, Beta: ${event.beta?.toFixed(2)}, Gamma: ${event.gamma?.toFixed(2)}`;
           }
-          gyroAlphaMetric.addCallback((observer) => observer.observe(event.alpha || 0));
-          gyroBetaMetric.addCallback((observer) => observer.observe(event.beta || 0));
-          gyroGammaMetric.addCallback((observer) => observer.observe(event.gamma || 0));
+          metrics.alpha.addCallback((observer) => observer.observe(event.alpha || 0));
+          metrics.beta.addCallback((observer) => observer.observe(event.beta || 0));
+          metrics.gamma.addCallback((observer) => observer.observe(event.gamma || 0));
         }, { once: true });
       }, telemetryInterval);
     }
@@ -7082,8 +7083,8 @@
           if (gpsDisplay) {
             gpsDisplay.textContent = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
           }
-          gpsLatMetric.addCallback((observer) => observer.observe(position.coords.latitude));
-          gpsLonMetric.addCallback((observer) => observer.observe(position.coords.longitude));
+          metrics.latitude.addCallback((observer) => observer.observe(position.coords.latitude));
+          metrics.longitude.addCallback((observer) => observer.observe(position.coords.longitude));
         }, (error) => {
           if (gpsDisplay) {
             gpsDisplay.textContent = `GPS Error: ${error.message}`;
