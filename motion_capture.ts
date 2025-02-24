@@ -15,13 +15,14 @@ type SensorData = {
 	longitude?: ObservableGauge;
 };
 
-const version = "1.0.2"
+const version = "1.0.3"
 
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const intervalInput = document.getElementById('interval') as HTMLInputElement;
 const accelDisplay = document.getElementById('accel');
 const gyroDisplay = document.getElementById('gyro');
 const gpsDisplay = document.getElementById('gps');
+document.getElementById('version').textContent = version;
 
 let telemetryInterval = 500;
 let trackingActive = false;

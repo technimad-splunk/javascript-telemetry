@@ -6978,12 +6978,13 @@
   );
 
   // motion_capture.ts
-  var version = "1.0.2";
+  var version = "1.0.3";
   var nameInput = document.getElementById("name");
   var intervalInput = document.getElementById("interval");
   var accelDisplay = document.getElementById("accel");
   var gyroDisplay = document.getElementById("gyro");
   var gpsDisplay = document.getElementById("gps");
+  document.getElementById("version").textContent = version;
   var telemetryInterval = 500;
   var trackingActive = false;
   var motionInterval;
