@@ -1,4 +1,4 @@
-#set($inputRoot = $input.json('$.resourceMetrics'))
+#set($inputRoot = $util.parseJson($input.json('$.resourceMetrics')))
 {
   "gauge": [
   #foreach($resourceMetric in $inputRoot)
@@ -8,13 +8,11 @@
         #set($serviceName = $attribute.value.stringValue)
       #end
     #end
-
     #foreach($scopeMetric in $resourceMetric.scopeMetrics)
       #foreach($metric in $scopeMetric.metrics)
-        #if($metric.gauge && $metric.gauge.dataPoints.size() > 0)
+        #if($metric.gauge && $metric.gauge.dataPoints && $metric.gauge.dataPoints.size() > 0)
           #set($dataPoint = $metric.gauge.dataPoints[0])
-          #set($timestampNano = $dataPoint.timeUnixNano)
-          #set($timestampMilli = $timestampNano.substring(0, 13))  ## Convert nanoseconds to milliseconds
+          #set($timestampMilli = $dataPoint.timeUnixNano.substring(0, 13))  ## Convert nanoseconds to milliseconds
           {
             "metric": "$metric.name",
             "value": $dataPoint.asDouble,
