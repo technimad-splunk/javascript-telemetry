@@ -6978,7 +6978,7 @@
   );
 
   // motion_capture.ts
-  var version = "1.0.0";
+  var version = "1.0.1";
   var nameInput = document.getElementById("name");
   var intervalInput = document.getElementById("interval");
   var accelDisplay = document.getElementById("accel");

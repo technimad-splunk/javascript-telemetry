@@ -15,7 +15,7 @@ type SensorData = {
 	longitude?: ObservableGauge;
 };
 
-const version = "1.0.0"
+const version = "1.0.1"
 
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const intervalInput = document.getElementById('interval') as HTMLInputElement;
