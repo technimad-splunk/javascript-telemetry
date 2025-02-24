@@ -13,7 +13,7 @@
             "dimensions": {
             #foreach($attribute in $resourceMetric.resource.attributes)
                 #if($attribute.key.substring(0,10) != "telemetry.")
-                "$attribute.key": "$attribute.value.stringValue",
+                "$attribute.key": "$attribute.value.stringValue"#if(!$foreach.last),#end
                 #end
     		#end
             },
