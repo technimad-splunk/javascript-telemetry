@@ -31,7 +31,7 @@ function getToken(): string {
 
 function getEndpoint(): string {
 	//return endpointInput.value || "https://ingest.eu0.signalfx.com/v2/datapoint/otlp";
-	return "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/default/";
+	return "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/otlp/";
 }
 
 function createExporter(): PeriodicExportingMetricReader {
@@ -39,7 +39,6 @@ function createExporter(): PeriodicExportingMetricReader {
 		url: getEndpoint(),
 		headers: {
 			"Content-Type": "application/json",
-			"X-SF-Token": "XgM_Jx8-OnfDDgKOgDnlAQ",
 		}
 	});
 	return new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 1000 });

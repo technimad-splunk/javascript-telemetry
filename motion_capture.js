@@ -6982,14 +6982,13 @@
   var orientationInterval;
   var gpsInterval;
   function getEndpoint() {
-    return "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/default/";
+    return "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/otlp/";
   }
   function createExporter() {
     const exporter = new OTLPMetricExporter({
       url: getEndpoint(),
       headers: {
-        "Content-Type": "application/json",
-        "X-SF-Token": "XgM_Jx8-OnfDDgKOgDnlAQ"
+        "Content-Type": "application/json"
       }
     });
     return new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 1e3 });
