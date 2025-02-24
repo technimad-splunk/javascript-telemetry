@@ -2966,7 +2966,7 @@
       };
       MetricReader2.prototype.collect = function(options) {
         return __awaiter2(this, void 0, void 0, function() {
-          var _a2, sdkCollectionResults, additionalCollectionResults, errors, resource2, scopeMetrics;
+          var _a2, sdkCollectionResults, additionalCollectionResults, errors, resource, scopeMetrics;
           return __generator2(this, function(_b) {
             switch (_b.label) {
               case 0:
@@ -2990,13 +2990,13 @@
                 errors = sdkCollectionResults.errors.concat(FlatMap(additionalCollectionResults, function(result) {
                   return result.errors;
                 }));
-                resource2 = sdkCollectionResults.resourceMetrics.resource;
+                resource = sdkCollectionResults.resourceMetrics.resource;
                 scopeMetrics = sdkCollectionResults.resourceMetrics.scopeMetrics.concat(FlatMap(additionalCollectionResults, function(result) {
                   return result.resourceMetrics.scopeMetrics;
                 }));
                 return [2, {
                   resourceMetrics: {
-                    resource: resource2,
+                    resource,
                     scopeMetrics
                   },
                   errors
@@ -5215,8 +5215,8 @@
   var MeterProviderSharedState = (
     /** @class */
     function() {
-      function MeterProviderSharedState2(resource2) {
-        this.resource = resource2;
+      function MeterProviderSharedState2(resource) {
+        this.resource = resource;
         this.viewRegistry = new ViewRegistry();
         this.metricCollectors = [];
         this.meterSharedStates = /* @__PURE__ */ new Map();
@@ -5585,11 +5585,11 @@
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
   };
   function prepareResource(mergeWithDefaults, providedResource) {
-    var resource2 = providedResource !== null && providedResource !== void 0 ? providedResource : Resource.empty();
+    var resource = providedResource !== null && providedResource !== void 0 ? providedResource : Resource.empty();
     if (mergeWithDefaults) {
-      return Resource.default().merge(resource2);
+      return Resource.default().merge(resource);
     }
-    return resource2;
+    return resource;
   }
   var MeterProvider = (
     /** @class */
@@ -5632,9 +5632,9 @@
           }
         }
       }
-      MeterProvider2.prototype.getMeter = function(name, version, options) {
-        if (version === void 0) {
-          version = "";
+      MeterProvider2.prototype.getMeter = function(name, version2, options) {
+        if (version2 === void 0) {
+          version2 = "";
         }
         if (options === void 0) {
           options = {};
@@ -5645,7 +5645,7 @@
         }
         return this._sharedState.getMeterSharedState({
           name,
-          version,
+          version: version2,
           schemaUrl: options.schemaUrl
         }).meter;
       };
@@ -6330,9 +6330,9 @@
     }
     return ar;
   };
-  function createResource(resource2) {
+  function createResource(resource) {
     return {
-      attributes: toAttributes(resource2.attributes),
+      attributes: toAttributes(resource.attributes),
       droppedAttributesCount: 0
     };
   }
@@ -6978,17 +6978,19 @@
   );
 
   // motion_capture.ts
-  var tokenInput = document.getElementById("token");
-  var endpointInput = document.getElementById("endpoint");
+  var version = "1.0.0";
+  var nameInput = document.getElementById("name");
   var intervalInput = document.getElementById("interval");
   var accelDisplay = document.getElementById("accel");
   var gyroDisplay = document.getElementById("gyro");
   var gpsDisplay = document.getElementById("gps");
-  var telemetryInterval = 1e3;
+  var telemetryInterval = 500;
   var trackingActive = false;
   var motionInterval;
   var orientationInterval;
   var gpsInterval;
+  var meterProvider = new MeterProvider();
+  var meter = null;
   function getEndpoint() {
     return "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/otlp/";
   }
@@ -7001,21 +7003,23 @@
     });
     return new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 1e3 });
   }
-  var resource = new Resource({
-    "environment": "production"
-    // Custom dimension
-  });
-  var meterProvider = new MeterProvider({ resource });
-  meterProvider.addMetricReader(createExporter());
-  var meter = meterProvider.getMeter("motion-sensor");
-  var accelXMetric = meter.createObservableGauge("accelerometer_x");
-  var accelYMetric = meter.createObservableGauge("accelerometer_y");
-  var accelZMetric = meter.createObservableGauge("accelerometer_z");
-  var gyroAlphaMetric = meter.createObservableGauge("gyroscope_alpha");
-  var gyroBetaMetric = meter.createObservableGauge("gyroscope_beta");
-  var gyroGammaMetric = meter.createObservableGauge("gyroscope_gamma");
-  var gpsLatMetric = meter.createObservableGauge("gps_latitude");
-  var gpsLonMetric = meter.createObservableGauge("gps_longitude");
+  function startTelemetry() {
+    let resource = new Resource({
+      "player.name": nameInput.value,
+      "version": version
+      // Custom dimension
+    });
+    meterProvider = new MeterProvider({ resource, readers: [createExporter()] });
+    meter = meterProvider.getMeter("motion-sensor");
+    const accelXMetric2 = meter.createObservableGauge("accelerometer_x");
+    const accelYMetric2 = meter.createObservableGauge("accelerometer_y");
+    const accelZMetric2 = meter.createObservableGauge("accelerometer_z");
+    const gyroAlphaMetric2 = meter.createObservableGauge("gyroscope_alpha");
+    const gyroBetaMetric2 = meter.createObservableGauge("gyroscope_beta");
+    const gyroGammaMetric2 = meter.createObservableGauge("gyroscope_gamma");
+    const gpsLatMetric2 = meter.createObservableGauge("gps_latitude");
+    const gpsLonMetric2 = meter.createObservableGauge("gps_longitude");
+  }
   document.getElementById("requestPermission")?.addEventListener("click", () => {
     if (typeof DeviceMotionEvent.requestPermission === "function") {
       DeviceMotionEvent.requestPermission().then((permissionState) => {
@@ -7087,6 +7091,7 @@
         });
       }, telemetryInterval);
     }
+    startTelemetry();
   }
   function stopTracking() {
     trackingActive = false;

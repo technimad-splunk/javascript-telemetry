@@ -7,20 +7,18 @@
 </head>
 <body>
     <h1>Motion & GPS Telemetry</h1>
-
-    <label for="token">X-SF-Token:</label>
-    <input type="text" id="token" placeholder="Enter your SignalFx token">
-
-    <label for="endpoint">Telemetry Endpoint:</label>
-    <!--<input type="text" id="endpoint" value="https://ingest.eu0.signalfx.com/v2/datapoint/otlp">-->
-    <input type="text" id="endpoint" value="https://2frmh66hqj.execute-api.eu-west-1.amazonaws.com/v2/datapoint/otlp">
-
+<p>
+    <label for="name">Name:</label>
+    <input type="text" id="name">
+</p>
+<p>
     <label for="interval">Telemetry Interval (ms):</label>
-    <input type="number" id="interval" value="1000" min="100">
-
+    <input type="number" id="interval" value="500" min="100">
+</p>
+<p>
     <button id="requestPermission">Start Sensors</button>
     <button id="pauseTracking">Pause Sensors</button>
-
+</p>
     <h2>Accelerometer</h2>
     <p id="accel">Waiting for data...</p>
 

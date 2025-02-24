@@ -14,25 +14,24 @@ type SensorData = {
 	longitude?: number;
 };
 
-const tokenInput = document.getElementById('token') as HTMLInputElement;
-const endpointInput = document.getElementById('endpoint') as HTMLInputElement;
+const version = "1.0.0"
+
+const nameInput = document.getElementById('name') as HTMLInputElement;
 const intervalInput = document.getElementById('interval') as HTMLInputElement;
 const accelDisplay = document.getElementById('accel');
 const gyroDisplay = document.getElementById('gyro');
 const gpsDisplay = document.getElementById('gps');
 
-let telemetryInterval = 1000;
+let telemetryInterval = 500;
 let trackingActive = false;
 let motionInterval: number;
 let orientationInterval: number;
 let gpsInterval: number;
 
-function getToken(): string {
-	return tokenInput.value;
-}
+let meterProvider = new MeterProvider(); //placeholder for instrumentation after initialisation
+let meter = null; //placeholder for instrumentation after initialisation
 
 function getEndpoint(): string {
-	//return endpointInput.value || "https://ingest.eu0.signalfx.com/v2/datapoint/otlp";
 	return "https://aior8w88kh.execute-api.eu-west-1.amazonaws.com/otlp/";
 }
 
@@ -46,22 +45,30 @@ function createExporter(): PeriodicExportingMetricReader {
 	return new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 1000 });
 }
 
-const resource = new Resource({
-	'environment': 'production'  // Custom dimension
-});
+function startTelemetry() {
+	let resource = new Resource({
+		'player.name': nameInput.value,
+		'version': version // Custom dimension
+	});
+	meterProvider = new MeterProvider({ resource: resource, readers: [createExporter()] });
+	meter = meterProvider.getMeter('motion-sensor');
 
-const meterProvider = new MeterProvider({ resource });
-meterProvider.addMetricReader(createExporter());
-const meter = meterProvider.getMeter('motion-sensor');
+	const accelXMetric = meter.createObservableGauge('accelerometer_x');
+	const accelYMetric = meter.createObservableGauge('accelerometer_y');
+	const accelZMetric = meter.createObservableGauge('accelerometer_z');
+	const gyroAlphaMetric = meter.createObservableGauge('gyroscope_alpha');
+	const gyroBetaMetric = meter.createObservableGauge('gyroscope_beta');
+	const gyroGammaMetric = meter.createObservableGauge('gyroscope_gamma');
+	const gpsLatMetric = meter.createObservableGauge('gps_latitude');
+	const gpsLonMetric = meter.createObservableGauge('gps_longitude');
+}
 
-const accelXMetric = meter.createObservableGauge('accelerometer_x');
-const accelYMetric = meter.createObservableGauge('accelerometer_y');
-const accelZMetric = meter.createObservableGauge('accelerometer_z');
-const gyroAlphaMetric = meter.createObservableGauge('gyroscope_alpha');
-const gyroBetaMetric = meter.createObservableGauge('gyroscope_beta');
-const gyroGammaMetric = meter.createObservableGauge('gyroscope_gamma');
-const gpsLatMetric = meter.createObservableGauge('gps_latitude');
-const gpsLonMetric = meter.createObservableGauge('gps_longitude');
+function stopTelemetry() {
+	meterProvider.shutdown();
+}
+
+
+
 
 document.getElementById('requestPermission')?.addEventListener('click', () => {
 	if (typeof (DeviceMotionEvent as any).requestPermission === 'function') {
@@ -139,6 +146,7 @@ function startTracking(): void {
 			});
 		}, telemetryInterval);
 	}
+	startTelemetry();
 }
 
 function stopTracking(): void {
