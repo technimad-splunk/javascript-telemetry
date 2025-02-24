@@ -2968,7 +2968,7 @@
       };
       MetricReader2.prototype.collect = function(options) {
         return __awaiter2(this, void 0, void 0, function() {
-          var _a2, sdkCollectionResults, additionalCollectionResults, errors, resource, scopeMetrics;
+          var _a2, sdkCollectionResults, additionalCollectionResults, errors, resource2, scopeMetrics;
           return __generator2(this, function(_b) {
             switch (_b.label) {
               case 0:
@@ -2992,13 +2992,13 @@
                 errors = sdkCollectionResults.errors.concat(FlatMap(additionalCollectionResults, function(result) {
                   return result.errors;
                 }));
-                resource = sdkCollectionResults.resourceMetrics.resource;
+                resource2 = sdkCollectionResults.resourceMetrics.resource;
                 scopeMetrics = sdkCollectionResults.resourceMetrics.scopeMetrics.concat(FlatMap(additionalCollectionResults, function(result) {
                   return result.resourceMetrics.scopeMetrics;
                 }));
                 return [2, {
                   resourceMetrics: {
-                    resource,
+                    resource: resource2,
                     scopeMetrics
                   },
                   errors
@@ -5207,8 +5207,8 @@
   var MeterProviderSharedState = (
     /** @class */
     function() {
-      function MeterProviderSharedState2(resource) {
-        this.resource = resource;
+      function MeterProviderSharedState2(resource2) {
+        this.resource = resource2;
         this.viewRegistry = new ViewRegistry();
         this.metricCollectors = [];
         this.meterSharedStates = /* @__PURE__ */ new Map();
@@ -5577,11 +5577,11 @@
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
   };
   function prepareResource(mergeWithDefaults, providedResource) {
-    var resource = providedResource !== null && providedResource !== void 0 ? providedResource : Resource.empty();
+    var resource2 = providedResource !== null && providedResource !== void 0 ? providedResource : Resource.empty();
     if (mergeWithDefaults) {
-      return Resource.default().merge(resource);
+      return Resource.default().merge(resource2);
     }
-    return resource;
+    return resource2;
   }
   var MeterProvider = (
     /** @class */
@@ -6322,9 +6322,9 @@
     }
     return ar;
   };
-  function createResource(resource) {
+  function createResource(resource2) {
     return {
-      attributes: toAttributes(resource.attributes),
+      attributes: toAttributes(resource2.attributes),
       droppedAttributesCount: 0
     };
   }
@@ -6993,7 +6993,15 @@
     });
     return new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 1e3 });
   }
-  var meterProvider = new MeterProvider();
+  var resource = new Resource({
+    [SemanticResourceAttributes.SERVICE_NAME]: "my-service",
+    // Custom service name
+    [SemanticResourceAttributes.SERVICE_VERSION]: "1.0.0",
+    // Service version
+    "environment": "production"
+    // Custom dimension
+  });
+  var meterProvider = new MeterProvider({ resource });
   meterProvider.addMetricReader(createExporter());
   var meter = meterProvider.getMeter("motion-sensor");
   var accelXMetric = meter.createObservableGauge("accelerometer_x");

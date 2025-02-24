@@ -1,4 +1,5 @@
 import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { Resource } from '@opentelemetry/resources';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 
 type SensorData = {
@@ -44,7 +45,13 @@ function createExporter(): PeriodicExportingMetricReader {
 	return new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 1000 });
 }
 
-const meterProvider = new MeterProvider();
+const resource = new Resource({
+	[SemanticResourceAttributes.SERVICE_NAME]: 'my-service',  // Custom service name
+	[SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',    // Service version
+	'environment': 'production'  // Custom dimension
+});
+
+const meterProvider = new MeterProvider({ resource });
 meterProvider.addMetricReader(createExporter());
 const meter = meterProvider.getMeter('motion-sensor');
 

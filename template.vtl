@@ -2,12 +2,6 @@
 {
   "gauge": [
   #foreach($resourceMetric in $inputRoot)
-    #set($serviceName = "unknown_service")
-    #foreach($attribute in $resourceMetric.resource.attributes)
-      #if($attribute.key == "service.name")
-        #set($serviceName = $attribute.value.stringValue)
-      #end
-    #end
     #foreach($scopeMetric in $resourceMetric.scopeMetrics)
       #foreach($metric in $scopeMetric.metrics)
         #if($metric.gauge && $metric.gauge.dataPoints && $metric.gauge.dataPoints.size() > 0)
@@ -17,7 +11,11 @@
             "metric": "$metric.name",
             "value": $dataPoint.asDouble,
             "dimensions": {
-              "service": "$serviceName"
+            #foreach($attribute in $resourceMetric.resource.attributes)
+                #if($attribute.key.substring(0,10) != "telemetry.")
+                "$attribute.key": "$attribute.value.stringValue",
+                #end
+    		#end
             },
             "timestamp": $timestampMilli
           }#if($foreach.hasNext),#end
