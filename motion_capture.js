@@ -6978,7 +6978,7 @@
   );
 
   // motion_capture.ts
-  var version = "1.0.1";
+  var version = "1.0.2";
   var nameInput = document.getElementById("name");
   var intervalInput = document.getElementById("interval");
   var accelDisplay = document.getElementById("accel");
@@ -7007,7 +7007,7 @@
   function startTelemetry() {
     let resource = new Resource({
       "player.name": nameInput.value,
-      "version": version
+      "frontend.version": version
       // Custom dimension
     });
     meterProvider = new MeterProvider({ resource, readers: [createExporter()] });

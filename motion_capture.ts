@@ -15,7 +15,7 @@ type SensorData = {
 	longitude?: ObservableGauge;
 };
 
-const version = "1.0.1"
+const version = "1.0.2"
 
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const intervalInput = document.getElementById('interval') as HTMLInputElement;
@@ -50,7 +50,7 @@ function createExporter(): PeriodicExportingMetricReader {
 function startTelemetry() {
 	let resource = new Resource({
 		'player.name': nameInput.value,
-		'version': version // Custom dimension
+		'frontend.version': version // Custom dimension
 	});
 	meterProvider = new MeterProvider({ resource: resource, readers: [createExporter()] });
 	meter = meterProvider.getMeter('motion-sensor');
