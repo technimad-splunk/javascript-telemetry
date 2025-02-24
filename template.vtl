@@ -12,7 +12,7 @@
             "value": $dataPoint.asDouble,
             "dimensions": {
             #foreach($attribute in $resourceMetric.resource.attributes)
-                #if($attribute.key.substring(0,10) != "telemetry.")
+                #if($attribute.key.substring(0,10) != "telemetry." && $attribute.key != "service.name")
                 "$attribute.key": "$attribute.value.stringValue"#if(!$foreach.last),#end
                 #end
     		#end
