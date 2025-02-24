@@ -156,4 +156,5 @@ function stopTracking(): void {
 	clearInterval(motionInterval);
 	clearInterval(orientationInterval);
 	clearInterval(gpsInterval);
+	stopTelemetry();
 }

@@ -7021,6 +7021,9 @@
     metrics.latitude = meter.createObservableGauge("gps_latitude");
     metrics.longitude = meter.createObservableGauge("gps_longitude");
   }
+  function stopTelemetry() {
+    meterProvider.shutdown();
+  }
   document.getElementById("requestPermission")?.addEventListener("click", () => {
     if (typeof DeviceMotionEvent.requestPermission === "function") {
       DeviceMotionEvent.requestPermission().then((permissionState) => {
@@ -7099,5 +7102,6 @@
     clearInterval(motionInterval);
     clearInterval(orientationInterval);
     clearInterval(gpsInterval);
+    stopTelemetry();
   }
 })();
