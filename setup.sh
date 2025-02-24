@@ -1,6 +1,6 @@
 brew install node
 npm init -y
-npm install typescript @opentelemetry/sdk-metrics @opentelemetry/exporter-metrics-otlp-http @opentelemetry/resources @opentelemetry/semantic-conventions
+npm install typescript @opentelemetry/sdk-metrics @opentelemetry/exporter-metrics-otlp-http @opentelemetry/resources
 npm install --save-dev esbuild
 
 npx tsc --init

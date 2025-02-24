@@ -1,6 +1,5 @@
 import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { Resource } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 
 
@@ -48,8 +47,6 @@ function createExporter(): PeriodicExportingMetricReader {
 }
 
 const resource = new Resource({
-	[SemanticResourceAttributes.SERVICE_NAME]: 'my-service',  // Custom service name
-	[SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',    // Service version
 	'environment': 'production'  // Custom dimension
 });
 

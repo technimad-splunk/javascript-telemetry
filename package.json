@@ -1,0 +1,19 @@
+{
+	"name": "motion-capture",
+	"version": "1.0.0",
+	"description": "Motion capture web app with OpenTelemetry integration",
+	"scripts": {
+		"build": "esbuild motion_capture.ts --bundle --outfile=motion_capture.js --format=iife",
+		"start": "npx http-server ."
+	},
+	"devDependencies": {
+		"esbuild": "^0.25.0",
+		"typescript": "^5.7.3"
+	},
+	"dependencies": {
+		"@opentelemetry/exporter-metrics-otlp-http": "^0.57.2",
+		"@opentelemetry/resources": "^1.30.1",
+		"@opentelemetry/sdk-metrics": "^1.30.1",
+		"@opentelemetry/semantic-conventions": "^1.30.0"
+	}
+}
