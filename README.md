@@ -35,11 +35,11 @@ Important is to parse the incoming payload as json, and cast is to a json object
 
 
 ## Further actions
-- [ ] Change vtl template to support multiple resource attributes. Currently only service.name is supported
+- [X] Change vtl template to support multiple resource attributes. Currently only service.name is supported
 - [ ] Make data collection interval configurable
-- [ ] Add inputs for extra attributes (name, number)
-- [ ] remove token from frontend
-- [ ] Add token as variable to the api gateway config
+- [X] Add inputs for extra attributes (name, number)
+- [X] remove token from frontend
+- [X] Add token as variable to the api gateway config
 - [ ] Save api gateway config to this repo
 - [ ] Prevent device sleep
 - [ ] Calibrate gyroscope on telemetry start
