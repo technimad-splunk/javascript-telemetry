@@ -16,7 +16,7 @@ type SensorData = {
 	speed?: ObservableGauge;
 };
 
-const version = "1.0.4"
+const version = "1.0.5"
 
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const intervalInput = document.getElementById('interval') as HTMLInputElement;
@@ -76,18 +76,45 @@ function stopTelemetry() {
 
 
 document.getElementById('requestPermission')?.addEventListener('click', () => {
+	// Request motion sensor permission
 	if (typeof (DeviceMotionEvent as any).requestPermission === 'function') {
 		(DeviceMotionEvent as any).requestPermission().then((permissionState: string) => {
 			if (permissionState === 'granted') {
-				startTracking();
+				// Request GPS permission
+				if (navigator.geolocation) {
+					navigator.geolocation.getCurrentPosition(
+						() => {
+							// Permission granted, start tracking
+							startTracking();
+						},
+						(error) => {
+							alert('Location permission denied: ' + error.message);
+						}
+					);
+				} else {
+					alert('Geolocation not supported by your browser');
+				}
 			} else {
 				alert('Motion permission denied');
 			}
 		}).catch(console.error);
 	} else {
-		startTracking();
+		// If not iOS or if no explicit permission API, just try both
+		if (navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(
+				() => {
+					startTracking();
+				},
+				(error) => {
+					alert('Location permission denied: ' + error.message);
+				}
+			);
+		} else {
+			startTracking();
+		}
 	}
 });
+
 
 document.getElementById('interval')?.addEventListener('change', (event) => {
 	telemetryInterval = parseInt((event.target as HTMLInputElement).value) || 1000;
@@ -140,11 +167,18 @@ function startTracking(): void {
 		gpsInterval = window.setInterval(() => {
 			navigator.geolocation.getCurrentPosition((position) => {
 				if (gpsDisplay) {
-					gpsDisplay.textContent = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}, Speed: ${position.coords.speed.toFixed(1)}`;
+					let gpsText = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
+					if (position.coords.speed !== null) {
+						gpsText += `, Speed: ${position.coords.speed.toFixed(1)}`;
+					}
+					gpsDisplay.textContent = gpsText;
 				}
+
 				metrics.latitude.addCallback(observer => observer.observe(position.coords.latitude));
 				metrics.longitude.addCallback(observer => observer.observe(position.coords.longitude));
-				metrics.speed.addCallback(observer => observer.observe(position.coords.speed || 0));
+				if (position.coords.speed !== null) {
+					metrics.speed.addCallback(observer => observer.observe(position.coords.speed));
+				}
 			}, (error) => {
 				if (gpsDisplay) {
 					gpsDisplay.textContent = `GPS Error: ${error.message}`;

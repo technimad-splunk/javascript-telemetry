@@ -7634,7 +7634,7 @@
       init_esm6();
       init_esm5();
       init_esm9();
-      var version = "1.0.4";
+      var version = "1.0.5";
       var nameInput = document.getElementById("name");
       var intervalInput = document.getElementById("interval");
       var accelDisplay = document.getElementById("accel");
@@ -7686,13 +7686,35 @@
         if (typeof DeviceMotionEvent.requestPermission === "function") {
           DeviceMotionEvent.requestPermission().then((permissionState) => {
             if (permissionState === "granted") {
-              startTracking();
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                  () => {
+                    startTracking();
+                  },
+                  (error) => {
+                    alert("Location permission denied: " + error.message);
+                  }
+                );
+              } else {
+                alert("Geolocation not supported by your browser");
+              }
             } else {
               alert("Motion permission denied");
             }
           }).catch(console.error);
         } else {
-          startTracking();
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              () => {
+                startTracking();
+              },
+              (error) => {
+                alert("Location permission denied: " + error.message);
+              }
+            );
+          } else {
+            startTracking();
+          }
         }
       });
       document.getElementById("interval")?.addEventListener("change", (event) => {
@@ -7742,11 +7764,17 @@
           gpsInterval = window.setInterval(() => {
             navigator.geolocation.getCurrentPosition((position) => {
               if (gpsDisplay) {
-                gpsDisplay.textContent = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}, Speed: ${position.coords.speed.toFixed(1)}`;
+                let gpsText = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
+                if (position.coords.speed !== null) {
+                  gpsText += `, Speed: ${position.coords.speed.toFixed(1)}`;
+                }
+                gpsDisplay.textContent = gpsText;
               }
               metrics.latitude.addCallback((observer) => observer.observe(position.coords.latitude));
               metrics.longitude.addCallback((observer) => observer.observe(position.coords.longitude));
-              metrics.speed.addCallback((observer) => observer.observe(position.coords.speed || 0));
+              if (position.coords.speed !== null) {
+                metrics.speed.addCallback((observer) => observer.observe(position.coords.speed));
+              }
             }, (error) => {
               if (gpsDisplay) {
                 gpsDisplay.textContent = `GPS Error: ${error.message}`;
