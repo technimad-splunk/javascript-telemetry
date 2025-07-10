@@ -7634,7 +7634,7 @@
       init_esm6();
       init_esm5();
       init_esm9();
-      var version = "1.0.6";
+      var version = "1.0.7";
       var nameInput = document.getElementById("name");
       var intervalInput = document.getElementById("interval");
       var accelDisplay = document.getElementById("accel");
@@ -7644,8 +7644,8 @@
       var telemetryInterval = 500;
       var trackingActive = false;
       var orientationInterval;
-      var gpsInterval;
       var motionHandler;
+      var gpsWatchId = null;
       var meterProvider = new MeterProvider();
       var meter = null;
       var metrics = {};
@@ -7759,8 +7759,8 @@
           }, telemetryInterval);
         }
         if (navigator.geolocation) {
-          gpsInterval = window.setInterval(() => {
-            navigator.geolocation.getCurrentPosition((position) => {
+          gpsWatchId = navigator.geolocation.watchPosition(
+            (position) => {
               if (gpsDisplay) {
                 let gpsText = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
                 if (position.coords.speed !== null) {
@@ -7773,12 +7773,19 @@
               if (position.coords.speed !== null) {
                 metrics.speed.addCallback((observer) => observer.observe(position.coords.speed));
               }
-            }, (error) => {
+            },
+            (error) => {
               if (gpsDisplay) {
                 gpsDisplay.textContent = `GPS Error: ${error.message}`;
               }
-            });
-          }, telemetryInterval);
+            },
+            {
+              enableHighAccuracy: true,
+              // Optional, depending on needs
+              maximumAge: 1e3,
+              timeout: 1e4
+            }
+          );
         }
         startTelemetry();
       }
@@ -7788,7 +7795,10 @@
           window.removeEventListener("devicemotion", motionHandler);
         }
         clearInterval(orientationInterval);
-        clearInterval(gpsInterval);
+        if (gpsWatchId !== null) {
+          navigator.geolocation.clearWatch(gpsWatchId);
+          gpsWatchId = null;
+        }
         stopTelemetry();
       }
     }

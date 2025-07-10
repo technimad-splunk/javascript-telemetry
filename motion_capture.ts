@@ -16,7 +16,7 @@ type SensorData = {
 	speed?: ObservableGauge;
 };
 
-const version = "1.0.6"
+const version = "1.0.7"
 
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const intervalInput = document.getElementById('interval') as HTMLInputElement;
@@ -27,10 +27,10 @@ document.getElementById('version').textContent = version;
 
 let telemetryInterval = 500;
 let trackingActive = false;
-let motionInterval: number;
 let orientationInterval: number;
 let gpsInterval: number;
-let motionHandler: null;
+let motionHandler: (event: DeviceMotionEvent) => void;
+let gpsWatchId: number | null = null;
 
 let meterProvider = new MeterProvider(); //placeholder for instrumentation after initialisation
 let meter = null; //placeholder for instrumentation after initialisation
@@ -166,8 +166,8 @@ function startTracking(): void {
 	}
 
 	if (navigator.geolocation) {
-		gpsInterval = window.setInterval(() => {
-			navigator.geolocation.getCurrentPosition((position) => {
+		gpsWatchId = navigator.geolocation.watchPosition(
+			(position) => {
 				if (gpsDisplay) {
 					let gpsText = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
 					if (position.coords.speed !== null) {
@@ -175,18 +175,23 @@ function startTracking(): void {
 					}
 					gpsDisplay.textContent = gpsText;
 				}
-
 				metrics.latitude.addCallback(observer => observer.observe(position.coords.latitude));
 				metrics.longitude.addCallback(observer => observer.observe(position.coords.longitude));
 				if (position.coords.speed !== null) {
 					metrics.speed.addCallback(observer => observer.observe(position.coords.speed));
 				}
-			}, (error) => {
+			},
+			(error) => {
 				if (gpsDisplay) {
 					gpsDisplay.textContent = `GPS Error: ${error.message}`;
 				}
-			});
-		}, telemetryInterval);
+			},
+			{
+				enableHighAccuracy: true, // Optional, depending on needs
+				maximumAge: 1000,
+				timeout: 10000
+			}
+		);
 	}
 	startTelemetry();
 }
@@ -197,6 +202,9 @@ function stopTracking(): void {
 		window.removeEventListener('devicemotion', motionHandler);
 	}
 	clearInterval(orientationInterval);
-	clearInterval(gpsInterval);
+	if (gpsWatchId !== null) {
+		navigator.geolocation.clearWatch(gpsWatchId);
+		gpsWatchId = null;
+	}
 	stopTelemetry();
 }
