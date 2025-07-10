@@ -13,9 +13,10 @@ type SensorData = {
 	gamma?: ObservableGauge;
 	latitude?: ObservableGauge;
 	longitude?: ObservableGauge;
+	speed?: ObservableGauge;
 };
 
-const version = "1.0.3"
+const version = "1.0.4"
 
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const intervalInput = document.getElementById('interval') as HTMLInputElement;
@@ -64,6 +65,7 @@ function startTelemetry() {
 	metrics.gamma = meter.createObservableGauge('gyroscope_gamma');
 	metrics.latitude = meter.createObservableGauge('gps_latitude');
 	metrics.longitude = meter.createObservableGauge('gps_longitude');
+	metrics.speed = meter.createObservableGauge('gps_speed');
 }
 
 function stopTelemetry() {
@@ -138,10 +140,11 @@ function startTracking(): void {
 		gpsInterval = window.setInterval(() => {
 			navigator.geolocation.getCurrentPosition((position) => {
 				if (gpsDisplay) {
-					gpsDisplay.textContent = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
+					gpsDisplay.textContent = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}, Speed: ${position.coords.speed.toFixed(1)}`;
 				}
 				metrics.latitude.addCallback(observer => observer.observe(position.coords.latitude));
 				metrics.longitude.addCallback(observer => observer.observe(position.coords.longitude));
+				metrics.speed.addCallback(observer => observer.observe(position.coords.speed || 0));
 			}, (error) => {
 				if (gpsDisplay) {
 					gpsDisplay.textContent = `GPS Error: ${error.message}`;
