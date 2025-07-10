@@ -7634,7 +7634,7 @@
       init_esm6();
       init_esm5();
       init_esm9();
-      var version = "1.0.5";
+      var version = "1.0.6";
       var nameInput = document.getElementById("name");
       var intervalInput = document.getElementById("interval");
       var accelDisplay = document.getElementById("accel");
@@ -7643,9 +7643,9 @@
       document.getElementById("version").textContent = version;
       var telemetryInterval = 500;
       var trackingActive = false;
-      var motionInterval;
       var orientationInterval;
       var gpsInterval;
+      var motionHandler;
       var meterProvider = new MeterProvider();
       var meter = null;
       var metrics = {};
@@ -7735,19 +7735,17 @@
       });
       function startTracking() {
         trackingActive = true;
-        if (window.DeviceMotionEvent) {
-          motionInterval = window.setInterval(() => {
-            window.addEventListener("devicemotion", (event) => {
-              let accel = event.accelerationIncludingGravity;
-              if (accelDisplay) {
-                accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)}`;
-              }
-              metrics.x.addCallback((observer) => observer.observe(accel.x || 0));
-              metrics.y.addCallback((observer) => observer.observe(accel.y || 0));
-              metrics.z.addCallback((observer) => observer.observe(accel.z || 0));
-            }, { once: true });
-          }, telemetryInterval);
-        }
+        motionHandler = (event) => {
+          const accel = event.accelerationIncludingGravity;
+          if (!accel) return;
+          if (accelDisplay) {
+            accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)}`;
+          }
+          metrics.x.addCallback((observer) => observer.observe(accel.x || 0));
+          metrics.y.addCallback((observer) => observer.observe(accel.y || 0));
+          metrics.z.addCallback((observer) => observer.observe(accel.z || 0));
+        };
+        window.addEventListener("devicemotion", motionHandler);
         if (window.DeviceOrientationEvent) {
           orientationInterval = window.setInterval(() => {
             window.addEventListener("deviceorientation", (event) => {
@@ -7786,7 +7784,9 @@
       }
       function stopTracking() {
         trackingActive = false;
-        clearInterval(motionInterval);
+        if (motionHandler) {
+          window.removeEventListener("devicemotion", motionHandler);
+        }
         clearInterval(orientationInterval);
         clearInterval(gpsInterval);
         stopTelemetry();

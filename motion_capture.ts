@@ -16,7 +16,7 @@ type SensorData = {
 	speed?: ObservableGauge;
 };
 
-const version = "1.0.5"
+const version = "1.0.6"
 
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const intervalInput = document.getElementById('interval') as HTMLInputElement;
@@ -30,6 +30,7 @@ let trackingActive = false;
 let motionInterval: number;
 let orientationInterval: number;
 let gpsInterval: number;
+let motionHandler: null;
 
 let meterProvider = new MeterProvider(); //placeholder for instrumentation after initialisation
 let meter = null; //placeholder for instrumentation after initialisation
@@ -136,19 +137,20 @@ document.getElementById('pauseTracking')?.addEventListener('click', () => {
 
 function startTracking(): void {
 	trackingActive = true;
-	if (window.DeviceMotionEvent) {
-		motionInterval = window.setInterval(() => {
-			window.addEventListener('devicemotion', (event) => {
-				let accel = event.accelerationIncludingGravity;
-				if (accelDisplay) {
-					accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)}`;
-				}
-				metrics.x.addCallback(observer => observer.observe(accel.x || 0));
-				metrics.y.addCallback(observer => observer.observe(accel.y || 0));
-				metrics.z.addCallback(observer => observer.observe(accel.z || 0));
-			}, { once: true });
-		}, telemetryInterval);
-	}
+	motionHandler = (event: DeviceMotionEvent) => {
+		const accel = event.accelerationIncludingGravity;
+		if (!accel) return;
+
+		if (accelDisplay) {
+			accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)}`;
+		}
+
+		metrics.x.addCallback(observer => observer.observe(accel.x || 0));
+		metrics.y.addCallback(observer => observer.observe(accel.y || 0));
+		metrics.z.addCallback(observer => observer.observe(accel.z || 0));
+	};
+
+	window.addEventListener('devicemotion', motionHandler);
 
 	if (window.DeviceOrientationEvent) {
 		orientationInterval = window.setInterval(() => {
@@ -191,7 +193,9 @@ function startTracking(): void {
 
 function stopTracking(): void {
 	trackingActive = false;
-	clearInterval(motionInterval);
+	if (motionHandler) {
+		window.removeEventListener('devicemotion', motionHandler);
+	}
 	clearInterval(orientationInterval);
 	clearInterval(gpsInterval);
 	stopTelemetry();
