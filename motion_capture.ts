@@ -8,6 +8,7 @@ type SensorData = {
 	x?: ObservableGauge;
 	y?: ObservableGauge;
 	z?: ObservableGauge;
+	g?: ObservableGauge;
 	alpha?: ObservableGauge;
 	beta?: ObservableGauge;
 	gamma?: ObservableGauge;
@@ -16,7 +17,7 @@ type SensorData = {
 	speed?: ObservableGauge;
 };
 
-const version = "1.0.7"
+const version = "1.0.8"
 
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const intervalInput = document.getElementById('interval') as HTMLInputElement;
@@ -31,6 +32,8 @@ let orientationInterval: number;
 let gpsInterval: number;
 let motionHandler: (event: DeviceMotionEvent) => void;
 let gpsWatchId: number | null = null;
+let gForceSamples: number[] = [];
+let gForceProcessingInterval: number | null = null;
 
 let meterProvider = new MeterProvider(); //placeholder for instrumentation after initialisation
 let meter = null; //placeholder for instrumentation after initialisation
@@ -61,6 +64,7 @@ function startTelemetry() {
 	metrics.x = meter.createObservableGauge('accelerometer_x');
 	metrics.y = meter.createObservableGauge('accelerometer_y');
 	metrics.z = meter.createObservableGauge('accelerometer_z');
+	metrics.g = meter.createObservableGauge('g_force');
 	metrics.alpha = meter.createObservableGauge('gyroscope_alpha');
 	metrics.beta = meter.createObservableGauge('gyroscope_beta');
 	metrics.gamma = meter.createObservableGauge('gyroscope_gamma');
@@ -138,19 +142,32 @@ document.getElementById('pauseTracking')?.addEventListener('click', () => {
 function startTracking(): void {
 	trackingActive = true;
 	motionHandler = (event: DeviceMotionEvent) => {
-		const accel = event.accelerationIncludingGravity;
+		const accel = event.acceleration;
 		if (!accel) return;
 
+		let gForce = Math.sqrt(accel.x ^ 2 + accel.y ^ 2 + accel.z ^ 2);
+
 		if (accelDisplay) {
-			accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)}`;
+			accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)} G: ${gForce}`;
 		}
 
-		metrics.x.addCallback(observer => observer.observe(accel.x || 0));
-		metrics.y.addCallback(observer => observer.observe(accel.y || 0));
-		metrics.z.addCallback(observer => observer.observe(accel.z || 0));
+		gForceSamples.push(gForce);
+
+		//metrics.x.addCallback(observer => observer.observe(accel.x || 0));
+		//metrics.y.addCallback(observer => observer.observe(accel.y || 0));
+		//metrics.z.addCallback(observer => observer.observe(accel.z || 0));
 	};
 
 	window.addEventListener('devicemotion', motionHandler);
+
+	gForceProcessingInterval = window.setInterval(() => {
+		if (gForceSamples.length === 0) return;
+		let max_gForce = Math.max(...gForceSamples.map(v => v));
+		let min_gForce = Math.min(...gForceSamples.map(v => v));
+		let gForce = min_gForce * -1 > max_gForce ? min_gForce : max_gForce; //choose whichever is further away from 0.
+		metrics.g.addCallback(observer => observer.observe(gForce));
+		gForceSamples = [];
+	}, telemetryInterval);
 
 	if (window.DeviceOrientationEvent) {
 		orientationInterval = window.setInterval(() => {
@@ -206,5 +223,10 @@ function stopTracking(): void {
 		navigator.geolocation.clearWatch(gpsWatchId);
 		gpsWatchId = null;
 	}
+	if (gForceProcessingInterval !== null) {
+		clearInterval(gForceProcessingInterval);
+		gForceProcessingInterval = null;
+	}
+	gForceSamples = []
 	stopTelemetry();
 }

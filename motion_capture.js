@@ -7634,7 +7634,7 @@
       init_esm6();
       init_esm5();
       init_esm9();
-      var version = "1.0.7";
+      var version = "1.0.8";
       var nameInput = document.getElementById("name");
       var intervalInput = document.getElementById("interval");
       var accelDisplay = document.getElementById("accel");
@@ -7646,6 +7646,8 @@
       var orientationInterval;
       var motionHandler;
       var gpsWatchId = null;
+      var gForceSamples = [];
+      var gForceProcessingInterval = null;
       var meterProvider = new MeterProvider();
       var meter = null;
       var metrics = {};
@@ -7672,6 +7674,7 @@
         metrics.x = meter.createObservableGauge("accelerometer_x");
         metrics.y = meter.createObservableGauge("accelerometer_y");
         metrics.z = meter.createObservableGauge("accelerometer_z");
+        metrics.g = meter.createObservableGauge("g_force");
         metrics.alpha = meter.createObservableGauge("gyroscope_alpha");
         metrics.beta = meter.createObservableGauge("gyroscope_beta");
         metrics.gamma = meter.createObservableGauge("gyroscope_gamma");
@@ -7736,16 +7739,23 @@
       function startTracking() {
         trackingActive = true;
         motionHandler = (event) => {
-          const accel = event.accelerationIncludingGravity;
+          const accel = event.acceleration;
           if (!accel) return;
+          let gForce = Math.sqrt(accel.x ^ 2 + accel.y ^ 2 + accel.z ^ 2);
           if (accelDisplay) {
-            accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)}`;
+            accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)} G: ${gForce}`;
           }
-          metrics.x.addCallback((observer) => observer.observe(accel.x || 0));
-          metrics.y.addCallback((observer) => observer.observe(accel.y || 0));
-          metrics.z.addCallback((observer) => observer.observe(accel.z || 0));
+          gForceSamples.push(gForce);
         };
         window.addEventListener("devicemotion", motionHandler);
+        gForceProcessingInterval = window.setInterval(() => {
+          if (gForceSamples.length === 0) return;
+          let max_gForce = Math.max(...gForceSamples.map((v) => v));
+          let min_gForce = Math.min(...gForceSamples.map((v) => v));
+          let gForce = min_gForce * -1 > max_gForce ? min_gForce : max_gForce;
+          metrics.g.addCallback((observer) => observer.observe(gForce));
+          gForceSamples = [];
+        }, telemetryInterval);
         if (window.DeviceOrientationEvent) {
           orientationInterval = window.setInterval(() => {
             window.addEventListener("deviceorientation", (event) => {
@@ -7799,6 +7809,11 @@
           navigator.geolocation.clearWatch(gpsWatchId);
           gpsWatchId = null;
         }
+        if (gForceProcessingInterval !== null) {
+          clearInterval(gForceProcessingInterval);
+          gForceProcessingInterval = null;
+        }
+        gForceSamples = [];
         stopTelemetry();
       }
     }
