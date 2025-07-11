@@ -7761,18 +7761,18 @@
       init_esm5();
       init_esm9();
       var import_kalmanjs = __toESM(require_kalman());
-      var version = "1.0.10";
+      var version = "1.0.11";
       var nameInput = document.getElementById("name");
-      var intervalInput = document.getElementById("interval");
       var accelDisplay = document.getElementById("accel");
       var gyroDisplay = document.getElementById("gyro");
       var gpsDisplay = document.getElementById("gps");
       document.getElementById("version").textContent = version;
-      var latFilter = new import_kalmanjs.default({ R: 0.01, Q: 3 });
-      var lonFilter = new import_kalmanjs.default({ R: 0.01, Q: 3 });
+      var latFilter = new import_kalmanjs.default({ R: 0.1, Q: 2 });
+      var lonFilter = new import_kalmanjs.default({ R: 0.1, Q: 2 });
       var telemetryInterval = 1e3;
       var trackingActive = false;
       var orientationInterval;
+      var gpsInterval = 500;
       var motionHandler;
       var gpsWatchId = null;
       var gForceSamples = [];
@@ -7874,9 +7874,6 @@
           const accel = event.acceleration;
           if (!accel) return;
           let gForce = Math.sqrt(accel.x ^ 2 + accel.y ^ 2 + accel.z ^ 2) / 9.81;
-          if (accelDisplay) {
-            accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)} <br>G: ${gForce}`;
-          }
           gForceSamples.push(gForce);
         };
         window.addEventListener("devicemotion", motionHandler);
@@ -7885,6 +7882,9 @@
           let max_gForce = Math.max(...gForceSamples.map((v) => v));
           let min_gForce = Math.min(...gForceSamples.map((v) => v));
           let gForce = min_gForce * -1 > max_gForce ? min_gForce : max_gForce;
+          if (accelDisplay) {
+            accelDisplay.textContent = `g-force: ${gForce?.toFixed(2)}`;
+          }
           metrics.g.addCallback((observer) => observer.observe(gForce));
           gForceSamples = [];
         }, telemetryInterval);
@@ -7916,7 +7916,7 @@
             },
             {
               enableHighAccuracy: true,
-              maximumAge: 1e3,
+              maximumAge: gpsInterval,
               timeout: 1e4
             }
           );
@@ -7928,10 +7928,7 @@
               filteredLat = latFilter.filter(pos.coords.latitude);
               filteredLon = lonFilter.filter(pos.coords.longitude);
             }
-            let gpsText = `Lat: ${filteredLat.toFixed(6)}, Lon: ${filteredLon.toFixed(6)}`;
-            if (gpsMaxSpeed !== 0) {
-              gpsText += `<br> Speed: ${gpsMaxSpeed.toFixed(1)}`;
-            }
+            let gpsText = ` Speed: ${gpsMaxSpeed.toFixed(1)} - Lat: ${filteredLat.toFixed(6)}, Lon: ${filteredLon.toFixed(6)}`;
             if (gpsDisplay) {
               gpsDisplay.textContent = gpsText;
             }

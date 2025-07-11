@@ -2,6 +2,7 @@ import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk
 import { ObservableGauge } from '@opentelemetry/api';
 import { Resource } from '@opentelemetry/resources';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
+// @ts-ignore
 import KalmanFilter from 'kalmanjs';
 
 
@@ -18,23 +19,22 @@ type SensorData = {
 	speed?: ObservableGauge;
 };
 
-const version = "1.0.10"
+const version = "1.0.11"
 
 const nameInput = document.getElementById('name') as HTMLInputElement;
-const intervalInput = document.getElementById('interval') as HTMLInputElement;
 const accelDisplay = document.getElementById('accel');
 const gyroDisplay = document.getElementById('gyro');
 const gpsDisplay = document.getElementById('gps');
 document.getElementById('version').textContent = version;
 
 // Kalman filters for latitude and longitude
-const latFilter = new KalmanFilter({ R: 0.01, Q: 3 });
-const lonFilter = new KalmanFilter({ R: 0.01, Q: 3 });
+const latFilter = new KalmanFilter({ R: 0.1, Q: 2 });
+const lonFilter = new KalmanFilter({ R: 0.1, Q: 2 });
 
 let telemetryInterval = 1000;
 let trackingActive = false;
 let orientationInterval: number;
-let gpsInterval: number;
+let gpsInterval: number = 500; //how often we request a gps update.
 let motionHandler: (event: DeviceMotionEvent) => void;
 let gpsWatchId: number | null = null;
 let gForceSamples: number[] = [];
@@ -157,9 +157,9 @@ function startTracking(): void {
 
 		let gForce = Math.sqrt(accel.x ^ 2 + accel.y ^ 2 + accel.z ^ 2) / 9.81;
 
-		if (accelDisplay) {
-			accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)} <br>G: ${gForce}`;
-		}
+		// if (accelDisplay) {
+		// 	accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)}`;
+		// }
 
 		gForceSamples.push(gForce);
 
@@ -175,6 +175,11 @@ function startTracking(): void {
 		let max_gForce = Math.max(...gForceSamples.map(v => v));
 		let min_gForce = Math.min(...gForceSamples.map(v => v));
 		let gForce = min_gForce * -1 > max_gForce ? min_gForce : max_gForce; //choose whichever is further away from 0.
+
+		if (accelDisplay) {
+			accelDisplay.textContent = `g-force: ${gForce?.toFixed(2)}`;
+		}
+
 		metrics.g.addCallback(observer => observer.observe(gForce));
 		gForceSamples = [];
 	}, telemetryInterval);
@@ -211,7 +216,7 @@ function startTracking(): void {
 			},
 			{
 				enableHighAccuracy: true,
-				maximumAge: 1000,
+				maximumAge: gpsInterval,
 				timeout: 10000
 			}
 		);
@@ -228,10 +233,7 @@ function startTracking(): void {
 				filteredLat = latFilter.filter(pos.coords.latitude);
 				filteredLon = lonFilter.filter(pos.coords.longitude);
 			}
-			let gpsText = `Lat: ${filteredLat!.toFixed(6)}, Lon: ${filteredLon!.toFixed(6)}`;
-			if (gpsMaxSpeed !== 0) {
-				gpsText += `<br> Speed: ${gpsMaxSpeed.toFixed(1)}`;
-			}
+			let gpsText = ` Speed: ${gpsMaxSpeed.toFixed(1)} - Lat: ${filteredLat!.toFixed(6)}, Lon: ${filteredLon!.toFixed(6)}`;
 			if (gpsDisplay) {
 				gpsDisplay.textContent = gpsText;
 			}
