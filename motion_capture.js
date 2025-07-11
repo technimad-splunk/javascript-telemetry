@@ -1,12 +1,33 @@
 "use strict";
 (() => {
+  var __create = Object.create;
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __getProtoOf = Object.getPrototypeOf;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
   var __esm = (fn, res) => function __init() {
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
   var __commonJS = (cb, mod) => function __require() {
     return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
   };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+    // If the importer is in node compatibility mode or this is not an ESM
+    // file that has been converted to a CommonJS file using a Babel-
+    // compatible transform (i.e. "__esModule" has not been set), then set
+    // "default" to the CommonJS "module.exports" for node compatibility.
+    isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+    mod
+  ));
 
   // node_modules/@opentelemetry/sdk-metrics/build/esm/export/AggregationTemporality.js
   var AggregationTemporality;
@@ -7628,26 +7649,137 @@
     }
   });
 
+  // node_modules/kalmanjs/lib/kalman.js
+  var require_kalman = __commonJS({
+    "node_modules/kalmanjs/lib/kalman.js"(exports, module) {
+      "use strict";
+      function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+          throw new TypeError("Cannot call a class as a function");
+        }
+      }
+      function _defineProperties(target, props) {
+        for (var i = 0; i < props.length; i++) {
+          var descriptor = props[i];
+          descriptor.enumerable = descriptor.enumerable || false;
+          descriptor.configurable = true;
+          if ("value" in descriptor) descriptor.writable = true;
+          Object.defineProperty(target, descriptor.key, descriptor);
+        }
+      }
+      function _createClass(Constructor, protoProps, staticProps) {
+        if (protoProps) _defineProperties(Constructor.prototype, protoProps);
+        if (staticProps) _defineProperties(Constructor, staticProps);
+        return Constructor;
+      }
+      var KalmanFilter = /* @__PURE__ */ function() {
+        function KalmanFilter2() {
+          var _ref = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {}, _ref$R = _ref.R, R = _ref$R === void 0 ? 1 : _ref$R, _ref$Q = _ref.Q, Q = _ref$Q === void 0 ? 1 : _ref$Q, _ref$A = _ref.A, A = _ref$A === void 0 ? 1 : _ref$A, _ref$B = _ref.B, B = _ref$B === void 0 ? 0 : _ref$B, _ref$C = _ref.C, C = _ref$C === void 0 ? 1 : _ref$C;
+          _classCallCheck(this, KalmanFilter2);
+          this.R = R;
+          this.Q = Q;
+          this.A = A;
+          this.C = C;
+          this.B = B;
+          this.cov = NaN;
+          this.x = NaN;
+        }
+        _createClass(KalmanFilter2, [{
+          key: "filter",
+          value: function filter(z) {
+            var u = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : 0;
+            if (isNaN(this.x)) {
+              this.x = 1 / this.C * z;
+              this.cov = 1 / this.C * this.Q * (1 / this.C);
+            } else {
+              var predX = this.predict(u);
+              var predCov = this.uncertainty();
+              var K = predCov * this.C * (1 / (this.C * predCov * this.C + this.Q));
+              this.x = predX + K * (z - this.C * predX);
+              this.cov = predCov - K * this.C * predCov;
+            }
+            return this.x;
+          }
+          /**
+          * Predict next value
+          * @param  {Number} [u] Control
+          * @return {Number}
+          */
+        }, {
+          key: "predict",
+          value: function predict() {
+            var u = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : 0;
+            return this.A * this.x + this.B * u;
+          }
+          /**
+          * Return uncertainty of filter
+          * @return {Number}
+          */
+        }, {
+          key: "uncertainty",
+          value: function uncertainty() {
+            return this.A * this.cov * this.A + this.R;
+          }
+          /**
+          * Return the last filtered measurement
+          * @return {Number}
+          */
+        }, {
+          key: "lastMeasurement",
+          value: function lastMeasurement() {
+            return this.x;
+          }
+          /**
+          * Set measurement noise Q
+          * @param {Number} noise
+          */
+        }, {
+          key: "setMeasurementNoise",
+          value: function setMeasurementNoise(noise) {
+            this.Q = noise;
+          }
+          /**
+          * Set the process noise R
+          * @param {Number} noise
+          */
+        }, {
+          key: "setProcessNoise",
+          value: function setProcessNoise(noise) {
+            this.R = noise;
+          }
+        }]);
+        return KalmanFilter2;
+      }();
+      module.exports = KalmanFilter;
+    }
+  });
+
   // motion_capture.ts
   var require_motion_capture = __commonJS({
     "motion_capture.ts"() {
       init_esm6();
       init_esm5();
       init_esm9();
-      var version = "1.0.8";
+      var import_kalmanjs = __toESM(require_kalman());
+      var version = "1.0.10";
       var nameInput = document.getElementById("name");
       var intervalInput = document.getElementById("interval");
       var accelDisplay = document.getElementById("accel");
       var gyroDisplay = document.getElementById("gyro");
       var gpsDisplay = document.getElementById("gps");
       document.getElementById("version").textContent = version;
-      var telemetryInterval = 500;
+      var latFilter = new import_kalmanjs.default({ R: 0.01, Q: 3 });
+      var lonFilter = new import_kalmanjs.default({ R: 0.01, Q: 3 });
+      var telemetryInterval = 1e3;
       var trackingActive = false;
       var orientationInterval;
       var motionHandler;
       var gpsWatchId = null;
       var gForceSamples = [];
       var gForceProcessingInterval = null;
+      var latestPositions = [];
+      var gpsMaxSpeed = 0;
+      var gpsProcessingInterval = null;
       var meterProvider = new MeterProvider();
       var meter = null;
       var metrics = {};
@@ -7741,9 +7873,9 @@
         motionHandler = (event) => {
           const accel = event.acceleration;
           if (!accel) return;
-          let gForce = Math.sqrt(accel.x ^ 2 + accel.y ^ 2 + accel.z ^ 2);
+          let gForce = Math.sqrt(accel.x ^ 2 + accel.y ^ 2 + accel.z ^ 2) / 9.81;
           if (accelDisplay) {
-            accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)} G: ${gForce}`;
+            accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)} <br>G: ${gForce}`;
           }
           gForceSamples.push(gForce);
         };
@@ -7771,17 +7903,10 @@
         if (navigator.geolocation) {
           gpsWatchId = navigator.geolocation.watchPosition(
             (position) => {
-              if (gpsDisplay) {
-                let gpsText = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
-                if (position.coords.speed !== null) {
-                  gpsText += `, Speed: ${position.coords.speed.toFixed(1)}`;
-                }
-                gpsDisplay.textContent = gpsText;
-              }
-              metrics.latitude.addCallback((observer) => observer.observe(position.coords.latitude));
-              metrics.longitude.addCallback((observer) => observer.observe(position.coords.longitude));
-              if (position.coords.speed !== null) {
-                metrics.speed.addCallback((observer) => observer.observe(position.coords.speed));
+              latestPositions.push(position);
+              const speed = position.coords.speed;
+              if (typeof speed === "number" && !isNaN(speed)) {
+                gpsMaxSpeed = Math.max(gpsMaxSpeed, speed);
               }
             },
             (error) => {
@@ -7791,11 +7916,31 @@
             },
             {
               enableHighAccuracy: true,
-              // Optional, depending on needs
               maximumAge: 1e3,
               timeout: 1e4
             }
           );
+          gpsProcessingInterval = window.setInterval(() => {
+            if (latestPositions.length === 0) return;
+            let filteredLat = null;
+            let filteredLon = null;
+            for (const pos of latestPositions) {
+              filteredLat = latFilter.filter(pos.coords.latitude);
+              filteredLon = lonFilter.filter(pos.coords.longitude);
+            }
+            let gpsText = `Lat: ${filteredLat.toFixed(6)}, Lon: ${filteredLon.toFixed(6)}`;
+            if (gpsMaxSpeed !== 0) {
+              gpsText += `<br> Speed: ${gpsMaxSpeed.toFixed(1)}`;
+            }
+            if (gpsDisplay) {
+              gpsDisplay.textContent = gpsText;
+            }
+            metrics.latitude.addCallback((observer) => observer.observe(filteredLat));
+            metrics.longitude.addCallback((observer) => observer.observe(filteredLon));
+            metrics.speed.addCallback((observer) => observer.observe(gpsMaxSpeed || 0));
+            latestPositions = [];
+            gpsMaxSpeed = 0;
+          }, telemetryInterval);
         }
         startTelemetry();
       }
@@ -7809,6 +7954,12 @@
           navigator.geolocation.clearWatch(gpsWatchId);
           gpsWatchId = null;
         }
+        if (gpsProcessingInterval !== null) {
+          clearInterval(gpsProcessingInterval);
+          gpsProcessingInterval = null;
+        }
+        latestPositions = [];
+        gpsMaxSpeed = 0;
         if (gForceProcessingInterval !== null) {
           clearInterval(gForceProcessingInterval);
           gForceProcessingInterval = null;
@@ -7820,3 +7971,17 @@
   });
   require_motion_capture();
 })();
+/*! Bundled license information:
+
+kalmanjs/lib/kalman.js:
+  (**
+  * KalmanFilter
+  * @class
+  * @author Wouter Bulten
+  * @see {@link http://github.com/wouterbulten/kalmanjs}
+  * @version Version: 1.0.0-beta
+  * @copyright Copyright 2015-2018 Wouter Bulten
+  * @license MIT License
+  * @preserve
+  *)
+*/

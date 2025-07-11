@@ -2,6 +2,7 @@ import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk
 import { ObservableGauge } from '@opentelemetry/api';
 import { Resource } from '@opentelemetry/resources';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
+import KalmanFilter from 'kalmanjs';
 
 
 type SensorData = {
@@ -17,7 +18,7 @@ type SensorData = {
 	speed?: ObservableGauge;
 };
 
-const version = "1.0.8"
+const version = "1.0.10"
 
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const intervalInput = document.getElementById('interval') as HTMLInputElement;
@@ -26,7 +27,11 @@ const gyroDisplay = document.getElementById('gyro');
 const gpsDisplay = document.getElementById('gps');
 document.getElementById('version').textContent = version;
 
-let telemetryInterval = 500;
+// Kalman filters for latitude and longitude
+const latFilter = new KalmanFilter({ R: 0.01, Q: 3 });
+const lonFilter = new KalmanFilter({ R: 0.01, Q: 3 });
+
+let telemetryInterval = 1000;
 let trackingActive = false;
 let orientationInterval: number;
 let gpsInterval: number;
@@ -34,6 +39,11 @@ let motionHandler: (event: DeviceMotionEvent) => void;
 let gpsWatchId: number | null = null;
 let gForceSamples: number[] = [];
 let gForceProcessingInterval: number | null = null;
+let latestPositions: GeolocationPosition[] = [];
+let gpsMaxSpeed = 0;
+let gpsProcessingInterval: number | null = null;
+
+
 
 let meterProvider = new MeterProvider(); //placeholder for instrumentation after initialisation
 let meter = null; //placeholder for instrumentation after initialisation
@@ -145,10 +155,10 @@ function startTracking(): void {
 		const accel = event.acceleration;
 		if (!accel) return;
 
-		let gForce = Math.sqrt(accel.x ^ 2 + accel.y ^ 2 + accel.z ^ 2);
+		let gForce = Math.sqrt(accel.x ^ 2 + accel.y ^ 2 + accel.z ^ 2) / 9.81;
 
 		if (accelDisplay) {
-			accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)} G: ${gForce}`;
+			accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)} <br>G: ${gForce}`;
 		}
 
 		gForceSamples.push(gForce);
@@ -185,17 +195,13 @@ function startTracking(): void {
 	if (navigator.geolocation) {
 		gpsWatchId = navigator.geolocation.watchPosition(
 			(position) => {
-				if (gpsDisplay) {
-					let gpsText = `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
-					if (position.coords.speed !== null) {
-						gpsText += `, Speed: ${position.coords.speed.toFixed(1)}`;
-					}
-					gpsDisplay.textContent = gpsText;
-				}
-				metrics.latitude.addCallback(observer => observer.observe(position.coords.latitude));
-				metrics.longitude.addCallback(observer => observer.observe(position.coords.longitude));
-				if (position.coords.speed !== null) {
-					metrics.speed.addCallback(observer => observer.observe(position.coords.speed));
+				// Collect positions during telemetryInterval
+				latestPositions.push(position);
+
+				// Update max speed if valid
+				const speed = position.coords.speed;
+				if (typeof speed === 'number' && !isNaN(speed)) {
+					gpsMaxSpeed = Math.max(gpsMaxSpeed, speed);
 				}
 			},
 			(error) => {
@@ -204,11 +210,41 @@ function startTracking(): void {
 				}
 			},
 			{
-				enableHighAccuracy: true, // Optional, depending on needs
+				enableHighAccuracy: true,
 				maximumAge: 1000,
 				timeout: 10000
 			}
 		);
+
+		// Every telemetry interval, process and emit
+		gpsProcessingInterval = window.setInterval(() => {
+			if (latestPositions.length === 0) return;
+
+			// Feed all positions one by one through the filter
+			let filteredLat = null;
+			let filteredLon = null;
+
+			for (const pos of latestPositions) {
+				filteredLat = latFilter.filter(pos.coords.latitude);
+				filteredLon = lonFilter.filter(pos.coords.longitude);
+			}
+			let gpsText = `Lat: ${filteredLat!.toFixed(6)}, Lon: ${filteredLon!.toFixed(6)}`;
+			if (gpsMaxSpeed !== 0) {
+				gpsText += `<br> Speed: ${gpsMaxSpeed.toFixed(1)}`;
+			}
+			if (gpsDisplay) {
+				gpsDisplay.textContent = gpsText;
+			}
+
+			metrics.latitude.addCallback(observer => observer.observe(filteredLat!));
+			metrics.longitude.addCallback(observer => observer.observe(filteredLon!));
+			metrics.speed.addCallback(observer => observer.observe(gpsMaxSpeed || 0));
+
+			// Reset buffers for next interval
+			latestPositions = [];
+			gpsMaxSpeed = 0;
+
+		}, telemetryInterval);
 	}
 	startTelemetry();
 }
@@ -223,6 +259,13 @@ function stopTracking(): void {
 		navigator.geolocation.clearWatch(gpsWatchId);
 		gpsWatchId = null;
 	}
+	if (gpsProcessingInterval !== null) {
+		clearInterval(gpsProcessingInterval);
+		gpsProcessingInterval = null;
+	}
+	// Reset the GPS positions and speed buffers
+	latestPositions = [];
+	gpsMaxSpeed = 0;
 	if (gForceProcessingInterval !== null) {
 		clearInterval(gForceProcessingInterval);
 		gForceProcessingInterval = null;
