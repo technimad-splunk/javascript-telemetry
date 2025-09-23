@@ -70,5 +70,46 @@
 </footer>
 
 <script src="motion_capture.js"></script>
+<script>
+    // Request wake lock
+    async function requestWakeLock() {
+        if ('wakeLock' in navigator) {
+            try {
+                const wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Wake Lock is active');
+
+                document.addEventListener('visibilitychange', async () => {
+                    if (document.visibilityState === 'visible' && !wakeLock.released) {
+                        wakeLock.release();
+                        console.log('Releasing Wake Lock');
+                    } else if (document.visibilityState === 'hidden') {
+                        try {
+                            const newWakeLock = await navigator.wakeLock.request('screen');
+                            console.log('Wake Lock re-activated');
+                        } catch (err) {
+                            console.error(`${err.name}, ${err.message}`);
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        } else {
+            console.warn('Wake Lock API not supported in this browser.');
+        }
+    }
+
+    requestWakeLock();
+
+    function keepScreenActive() {
+        if ('wakeLock' in navigator) {
+            setInterval(() => {
+                document.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
+            }, 60000);
+        }
+    }
+
+    keepScreenActive();
+</script>
 </body>
 </html>
