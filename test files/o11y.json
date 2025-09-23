@@ -1,0 +1,20 @@
+{
+  gauge: [
+    {
+      metric: "gps_latitude",
+      value: 36.12383414317495,
+      dimensions: { [-]
+        service: "petstore"
+      },
+      timestamp: 1740088416134
+    },
+    {
+      metric: "gps_longitude",
+      value: -115.16646143105983,
+      dimensions: { [-]
+        service.name: "unknown_service"
+      },
+      timestamp: 1740088416134
+    },
+  ]
+}
