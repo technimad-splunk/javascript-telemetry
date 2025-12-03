@@ -21,7 +21,7 @@ type SensorData = {
 	speed?: ObservableGauge;
 };
 
-const version = "1.0.12";
+const version = "1.0.13";
 
 const nameInput = document.getElementById("name") as HTMLInputElement;
 const accelDisplay = document.getElementById("accel");
