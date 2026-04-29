@@ -34,6 +34,9 @@ The transfomation template is written in vtl.
 Important is to parse the incoming payload as json, and cast is to a json object, so it can be used for further processing.
 
 
+## Working on this repo with AI agents
+A four-agent Cursor subagent setup (orchestrator → planner → builder → verifier) is configured in `.cursor/agents/` to turn the plans in `plans/` into verified code changes. See [SUBAGENTS.md](./SUBAGENTS.md) for the workflow, hand-off contract, and usage.
+
 ## Further actions
 - [X] Change vtl template to support multiple resource attributes. Currently only service.name is supported
 - [ ] Make data collection interval configurable
