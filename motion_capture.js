@@ -7761,7 +7761,7 @@
       init_esm5();
       init_esm9();
       var import_kalmanjs = __toESM(require_kalman());
-      var version = "1.0.13";
+      var version = "1.0.14";
       var nameInput = document.getElementById("name");
       var accelDisplay = document.getElementById("accel");
       var gyroDisplay = document.getElementById("gyro");
