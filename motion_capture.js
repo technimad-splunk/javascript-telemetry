@@ -7761,15 +7761,15 @@
       init_esm5();
       init_esm9();
       var import_kalmanjs = __toESM(require_kalman());
-      var version = "1.0.15";
+      var version = "1.0.16";
       var nameInput = document.getElementById("name");
       var accelDisplay = document.getElementById("accel");
       var gyroDisplay = document.getElementById("gyro");
       var gpsDisplay = document.getElementById("gps");
       var versionEl = document.getElementById("version");
       if (versionEl) versionEl.textContent = version;
-      var latFilter = new import_kalmanjs.default({ R: 0.1, Q: 2 });
-      var lonFilter = new import_kalmanjs.default({ R: 0.1, Q: 2 });
+      var latFilter = new import_kalmanjs.default({ R: 1, Q: 1e-5 });
+      var lonFilter = new import_kalmanjs.default({ R: 1, Q: 1e-5 });
       var telemetryInterval = 1e3;
       var trackingActive = false;
       var motionHandler;
@@ -7910,6 +7910,8 @@
       function startTracking() {
         if (trackingActive) return;
         trackingActive = true;
+        latFilter = new import_kalmanjs.default({ R: 1, Q: 1e-5 });
+        lonFilter = new import_kalmanjs.default({ R: 1, Q: 1e-5 });
         motionHandler = (event) => {
           const a = event.accelerationIncludingGravity ?? event.acceleration;
           if (!a) return;
@@ -7976,7 +7978,7 @@
             },
             {
               enableHighAccuracy: true,
-              maximumAge: telemetryInterval,
+              maximumAge: 0,
               timeout: 1e4
             }
           );

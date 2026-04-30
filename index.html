@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Discourage aggressive HTML/asset caching, especially on iOS Safari, so new
+         deploys are picked up without the user having to clear site data. The
+         server-side Cache-Control headers are still authoritative; these meta tags
+         are a best-effort hint for clients that don't get that far. -->
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Motion & GPS Telemetry</title>
     <style>
         body {
@@ -69,8 +76,18 @@
 	<p><small>Frontend version: <span id="version"></span></small></p>
 </footer>
 
-<script src="motion_capture.js"></script>
+<script src="motion_capture.js?v=1.0.16"></script>
 <script>
+    // iOS Safari aggressively restores pages from the back/forward cache (bfcache).
+    // When a page is shown from bfcache, `event.persisted` is true and our scripts
+    // never re-run, so a freshly deployed version is silently ignored. Force a
+    // network reload in that case so users always run the current build.
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+
     async function requestWakeLock() {
         if (!('wakeLock' in navigator)) {
             console.warn('Wake Lock API not supported in this browser.');

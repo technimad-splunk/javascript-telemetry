@@ -21,7 +21,7 @@ type SensorData = {
 	speed?: ObservableGauge;
 };
 
-const version = "1.0.15";
+const version = "1.0.16";
 
 const nameInput = document.getElementById("name") as HTMLInputElement;
 const accelDisplay = document.getElementById("accel");
@@ -30,9 +30,14 @@ const gpsDisplay = document.getElementById("gps");
 const versionEl = document.getElementById("version");
 if (versionEl) versionEl.textContent = version;
 
-// Kalman filters for latitude and longitude
-const latFilter = new KalmanFilter({ R: 0.1, Q: 2 });
-const lonFilter = new KalmanFilter({ R: 0.1, Q: 2 });
+// Kalman filters for latitude and longitude. In kalmanjs, R is process noise
+// and Q is measurement noise (opposite of standard KF notation). With R=1 and
+// Q=1e-5 the steady-state gain is ~0.998, i.e. essentially passthrough with
+// only mild jitter rejection so the displayed position tracks real movement.
+// Filters are (re)instantiated in startTracking() to avoid stale state
+// across pause/resume.
+let latFilter = new KalmanFilter({ R: 1, Q: 1e-5 });
+let lonFilter = new KalmanFilter({ R: 1, Q: 1e-5 });
 
 let telemetryInterval = 1000;
 let trackingActive = false;
@@ -199,6 +204,9 @@ function startTracking(): void {
 	if (trackingActive) return;
 	trackingActive = true;
 
+	latFilter = new KalmanFilter({ R: 1, Q: 1e-5 });
+	lonFilter = new KalmanFilter({ R: 1, Q: 1e-5 });
+
 	motionHandler = (event: DeviceMotionEvent) => {
 		const a = event.accelerationIncludingGravity ?? event.acceleration;
 		if (!a) return;
@@ -288,7 +296,7 @@ function startTracking(): void {
 			},
 			{
 				enableHighAccuracy: true,
-				maximumAge: telemetryInterval,
+				maximumAge: 0,
 				timeout: 10000,
 			},
 		);
