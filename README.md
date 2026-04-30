@@ -3,6 +3,7 @@
 This is a PoC to test the feasibility to get telemetry data off a phone and send it via OpenTelemetry.
 To cater to easy distribution, this is implemented in a web app.
 The telemetry to collect consist of the accelerometer, gyroscope and gps.
+Accelerometer signals include per-axis OTLP gauges `accelerometer_x`, `accelerometer_y`, and `accelerometer_z` (m/s², same sources as `g_force`) plus scalar `g_force`.
 The telemetry is send to an aws api gateway endpoint, which transforms and forwards the payload to splunk observability cloud.
 
 ## Learnings

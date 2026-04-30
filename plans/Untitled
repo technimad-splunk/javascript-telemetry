@@ -1,9 +1,0 @@
-### Emit the accelerometer X, Y, Z axes
-
-**Why**
-`metrics.x`, `metrics.y`, `metrics.z` are created in [`motion_capture.ts`](../motion_capture.ts) lines 80–82 but are never observed (the `addCallback` lines 172–174 are commented out). Axis-level data is useful for gesture recognition and orientation analytics.
-
-**How**
-1. After fixing the g-force formula (bug-fixes item 1), store `a.x`, `a.y`, `a.z` in module-scoped latest-value variables.
-2. Register callbacks once (or call `.record()`) for `metrics.x/y/z` alongside the other instruments.
-3. Update the UI readout block (currently commented out at lines 166–168) to display axis values.

@@ -21,7 +21,7 @@ type SensorData = {
 	speed?: ObservableGauge;
 };
 
-const version = "1.0.14";
+const version = "1.0.15";
 
 const nameInput = document.getElementById("name") as HTMLInputElement;
 const accelDisplay = document.getElementById("accel");
@@ -44,6 +44,21 @@ let gForceProcessingInterval: number | null = null;
 let latestPositions: GeolocationPosition[] = [];
 let gpsMaxSpeed = 0;
 let gpsProcessingInterval: number | null = null;
+let lastGpsFix: { lat: number; lon: number; timestamp: number } | null = null;
+
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+	const earthRadiusM = 6371000;
+	const toRad = (deg: number) => (deg * Math.PI) / 180;
+	const dLat = toRad(lat2 - lat1);
+	const dLon = toRad(lon2 - lon1);
+	const sinDLat = Math.sin(dLat / 2);
+	const sinDLon = Math.sin(dLon / 2);
+	const a =
+		sinDLat * sinDLat +
+		Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * sinDLon * sinDLon;
+	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+	return earthRadiusM * c;
+}
 
 /** Latest values read by ObservableGauge callbacks (registered once in startTelemetry). */
 let latestG = 0;
@@ -53,6 +68,9 @@ let latestGamma = 0;
 let latestLat = 0;
 let latestLon = 0;
 let latestSpeed = 0;
+let latestAccelX = 0;
+let latestAccelY = 0;
+let latestAccelZ = 0;
 
 let meterProvider = new MeterProvider(); //placeholder for instrumentation after initialisation
 let meter = null; //placeholder for instrumentation after initialisation
@@ -97,6 +115,9 @@ function startTelemetry() {
 	metrics.longitude = meter.createObservableGauge("gps_longitude");
 	metrics.speed = meter.createObservableGauge("gps_speed");
 
+	metrics.x!.addCallback((o) => o.observe(latestAccelX));
+	metrics.y!.addCallback((o) => o.observe(latestAccelY));
+	metrics.z!.addCallback((o) => o.observe(latestAccelZ));
 	metrics.g!.addCallback((o) => o.observe(latestG));
 	metrics.alpha!.addCallback((o) => o.observe(latestAlpha));
 	metrics.beta!.addCallback((o) => o.observe(latestBeta));
@@ -182,7 +203,11 @@ function startTracking(): void {
 		const a = event.accelerationIncludingGravity ?? event.acceleration;
 		if (!a) return;
 
-		const gForce = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) / 9.81;
+		latestAccelX = a.x ?? 0;
+		latestAccelY = a.y ?? 0;
+		latestAccelZ = a.z ?? 0;
+
+		const gForce = Math.hypot(latestAccelX, latestAccelY, latestAccelZ) / 9.81;
 
 		gForceSamples.push(gForce);
 	};
@@ -196,7 +221,9 @@ function startTracking(): void {
 		let gForce = min_gForce * -1 > max_gForce ? min_gForce : max_gForce;
 
 		if (accelDisplay) {
-			accelDisplay.textContent = `g-force: ${gForce?.toFixed(2)}`;
+			accelDisplay.textContent = `x: ${latestAccelX.toFixed(2)}, y: ${latestAccelY.toFixed(
+				2,
+			)}, z: ${latestAccelZ.toFixed(2)} | g: ${gForce.toFixed(2)}`;
 		}
 
 		latestG = gForce;
@@ -221,9 +248,37 @@ function startTracking(): void {
 			(position) => {
 				latestPositions.push(position);
 
-				const speed = position.coords.speed;
-				if (typeof speed === "number" && !isNaN(speed)) {
-					gpsMaxSpeed = Math.max(gpsMaxSpeed, speed);
+				const lat = position.coords.latitude;
+				const lon = position.coords.longitude;
+				const timestamp = position.timestamp;
+
+				let nativeSpeed = position.coords.speed;
+				if (
+					nativeSpeed == null ||
+					typeof nativeSpeed !== "number" ||
+					isNaN(nativeSpeed) ||
+					nativeSpeed <= 0
+				) {
+					nativeSpeed = null;
+				}
+
+				let computedMs: number | null = null;
+				if (lastGpsFix !== null) {
+					const dtSec = (timestamp - lastGpsFix.timestamp) / 1000;
+					if (dtSec > 0) {
+						const distM = haversineMeters(lastGpsFix.lat, lastGpsFix.lon, lat, lon);
+						computedMs = distM / dtSec;
+					}
+				}
+				lastGpsFix = { lat, lon, timestamp };
+
+				const effectiveMs =
+					nativeSpeed != null ? nativeSpeed : computedMs != null && !isNaN(computedMs)
+						? Math.max(0, computedMs)
+						: 0;
+
+				if (effectiveMs > 0) {
+					gpsMaxSpeed = Math.max(gpsMaxSpeed, effectiveMs);
 				}
 			},
 			(error) => {
@@ -283,6 +338,7 @@ async function stopTracking(): Promise<void> {
 	}
 	latestPositions = [];
 	gpsMaxSpeed = 0;
+	lastGpsFix = null;
 	if (gForceProcessingInterval !== null) {
 		clearInterval(gForceProcessingInterval);
 		gForceProcessingInterval = null;

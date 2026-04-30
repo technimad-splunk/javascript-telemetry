@@ -4,6 +4,17 @@ All notable changes are recorded here, grouped by the plan that produced them.
 Categories: Bugfix, Enhancement, Improvement, Other.
 Entries are appended only on a successful or partial verifier PASS.
 
+## 2026-04-30 — plans/sprint.md (2/2 items, 2 loop(s))
+
+### Bugfix
+- GPS speed falls back to distance-over-time between fixes when native `coords.speed` is missing, invalid, or zero so iOS devices report movement instead of always 0 — `motion_capture.ts` (item: BUG: GPS location speed is not updated)
+
+### Enhancement
+- Per-axis accelerometer samples are stored, exported as `accelerometer_x` / `accelerometer_y` / `accelerometer_z`, and shown next to g-force in the UI — `motion_capture.ts` (item: Emit the accelerometer X, Y, Z axes)
+
+### Other
+- Document the three accelerometer axis metric names alongside the existing telemetry overview — `README.md` (item: Emit the accelerometer X, Y, Z axes)
+
 ## 2026-04-30 — plans/bug-fixes.md (10/10 passed, 1 loop(s))
 
 ### Bugfix

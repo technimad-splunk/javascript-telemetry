@@ -7761,7 +7761,7 @@
       init_esm5();
       init_esm9();
       var import_kalmanjs = __toESM(require_kalman());
-      var version = "1.0.14";
+      var version = "1.0.15";
       var nameInput = document.getElementById("name");
       var accelDisplay = document.getElementById("accel");
       var gyroDisplay = document.getElementById("gyro");
@@ -7780,6 +7780,18 @@
       var latestPositions = [];
       var gpsMaxSpeed = 0;
       var gpsProcessingInterval = null;
+      var lastGpsFix = null;
+      function haversineMeters(lat1, lon1, lat2, lon2) {
+        const earthRadiusM = 6371e3;
+        const toRad = (deg) => deg * Math.PI / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const sinDLat = Math.sin(dLat / 2);
+        const sinDLon = Math.sin(dLon / 2);
+        const a = sinDLat * sinDLat + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * sinDLon * sinDLon;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadiusM * c;
+      }
       var latestG = 0;
       var latestAlpha = 0;
       var latestBeta = 0;
@@ -7787,6 +7799,9 @@
       var latestLat = 0;
       var latestLon = 0;
       var latestSpeed = 0;
+      var latestAccelX = 0;
+      var latestAccelY = 0;
+      var latestAccelZ = 0;
       var meterProvider = new MeterProvider();
       var meter = null;
       var metrics = {};
@@ -7826,6 +7841,9 @@
         metrics.latitude = meter.createObservableGauge("gps_latitude");
         metrics.longitude = meter.createObservableGauge("gps_longitude");
         metrics.speed = meter.createObservableGauge("gps_speed");
+        metrics.x.addCallback((o) => o.observe(latestAccelX));
+        metrics.y.addCallback((o) => o.observe(latestAccelY));
+        metrics.z.addCallback((o) => o.observe(latestAccelZ));
         metrics.g.addCallback((o) => o.observe(latestG));
         metrics.alpha.addCallback((o) => o.observe(latestAlpha));
         metrics.beta.addCallback((o) => o.observe(latestBeta));
@@ -7895,7 +7913,10 @@
         motionHandler = (event) => {
           const a = event.accelerationIncludingGravity ?? event.acceleration;
           if (!a) return;
-          const gForce = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) / 9.81;
+          latestAccelX = a.x ?? 0;
+          latestAccelY = a.y ?? 0;
+          latestAccelZ = a.z ?? 0;
+          const gForce = Math.hypot(latestAccelX, latestAccelY, latestAccelZ) / 9.81;
           gForceSamples.push(gForce);
         };
         window.addEventListener("devicemotion", motionHandler);
@@ -7905,7 +7926,9 @@
           let min_gForce = Math.min(...gForceSamples.map((v) => v));
           let gForce = min_gForce * -1 > max_gForce ? min_gForce : max_gForce;
           if (accelDisplay) {
-            accelDisplay.textContent = `g-force: ${gForce?.toFixed(2)}`;
+            accelDisplay.textContent = `x: ${latestAccelX.toFixed(2)}, y: ${latestAccelY.toFixed(
+              2
+            )}, z: ${latestAccelZ.toFixed(2)} | g: ${gForce.toFixed(2)}`;
           }
           latestG = gForce;
           gForceSamples = [];
@@ -7925,9 +7948,25 @@
           gpsWatchId = navigator.geolocation.watchPosition(
             (position) => {
               latestPositions.push(position);
-              const speed = position.coords.speed;
-              if (typeof speed === "number" && !isNaN(speed)) {
-                gpsMaxSpeed = Math.max(gpsMaxSpeed, speed);
+              const lat = position.coords.latitude;
+              const lon = position.coords.longitude;
+              const timestamp = position.timestamp;
+              let nativeSpeed = position.coords.speed;
+              if (nativeSpeed == null || typeof nativeSpeed !== "number" || isNaN(nativeSpeed) || nativeSpeed <= 0) {
+                nativeSpeed = null;
+              }
+              let computedMs = null;
+              if (lastGpsFix !== null) {
+                const dtSec = (timestamp - lastGpsFix.timestamp) / 1e3;
+                if (dtSec > 0) {
+                  const distM = haversineMeters(lastGpsFix.lat, lastGpsFix.lon, lat, lon);
+                  computedMs = distM / dtSec;
+                }
+              }
+              lastGpsFix = { lat, lon, timestamp };
+              const effectiveMs = nativeSpeed != null ? nativeSpeed : computedMs != null && !isNaN(computedMs) ? Math.max(0, computedMs) : 0;
+              if (effectiveMs > 0) {
+                gpsMaxSpeed = Math.max(gpsMaxSpeed, effectiveMs);
               }
             },
             (error) => {
@@ -7981,6 +8020,7 @@
         }
         latestPositions = [];
         gpsMaxSpeed = 0;
+        lastGpsFix = null;
         if (gForceProcessingInterval !== null) {
           clearInterval(gForceProcessingInterval);
           gForceProcessingInterval = null;
