@@ -4,6 +4,10 @@
 
 After `npm install`, run `npm run build` once to generate `motion_capture.js` from `motion_capture.ts` (esbuild). The bundle is gitignored. Then use `npm start` or any static server in the repo root.
 
+## CI and GitHub Pages
+
+Pushes to `main` run `.github/workflows/deploy.yml`: install, `npm run lint`, `npx tsc --noEmit`, `npm run build` (bundle version = short git SHA in CI, `dev` locally), then publish a static site with `index.html` and `motion_capture.js` only. In the repository **Settings → Pages**, set the source to **GitHub Actions** so the workflow can deploy.
+
 This is a PoC to test the feasibility to get telemetry data off a phone and send it via OpenTelemetry.
 To cater to easy distribution, this is implemented in a web app.
 The telemetry to collect consist of the accelerometer, gyroscope and gps.
