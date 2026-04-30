@@ -110,6 +110,8 @@ function stopTelemetry() {
 }
 
 document.getElementById("requestPermission")?.addEventListener("click", () => {
+	if (trackingActive) return;
+
 	// Request motion sensor permission
 	if (typeof (DeviceMotionEvent as any).requestPermission === "function") {
 		(DeviceMotionEvent as any)
@@ -172,7 +174,9 @@ document.getElementById("pauseTracking")?.addEventListener("click", () => {
 });
 
 function startTracking(): void {
+	if (trackingActive) return;
 	trackingActive = true;
+
 	motionHandler = (event: DeviceMotionEvent) => {
 		const a = event.accelerationIncludingGravity ?? event.acceleration;
 		if (!a) return;

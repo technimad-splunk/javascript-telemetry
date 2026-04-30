@@ -7837,6 +7837,7 @@
         meterProvider.shutdown();
       }
       document.getElementById("requestPermission")?.addEventListener("click", () => {
+        if (trackingActive) return;
         if (typeof DeviceMotionEvent.requestPermission === "function") {
           DeviceMotionEvent.requestPermission().then((permissionState) => {
             if (permissionState === "granted") {
@@ -7888,6 +7889,7 @@
         }
       });
       function startTracking() {
+        if (trackingActive) return;
         trackingActive = true;
         motionHandler = (event) => {
           const a = event.accelerationIncludingGravity ?? event.acceleration;
