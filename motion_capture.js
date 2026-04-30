@@ -7761,7 +7761,7 @@
       init_esm5();
       init_esm9();
       var import_kalmanjs = __toESM(require_kalman());
-      var version = "1.0.11";
+      var version = "1.0.13";
       var nameInput = document.getElementById("name");
       var accelDisplay = document.getElementById("accel");
       var gyroDisplay = document.getElementById("gyro");
@@ -7793,7 +7793,10 @@
             "Content-Type": "application/json"
           }
         });
-        return new PeriodicExportingMetricReader({ exporter, exportIntervalMillis: 1e3 });
+        return new PeriodicExportingMetricReader({
+          exporter,
+          exportIntervalMillis: 1e3
+        });
       }
       function startTelemetry() {
         let resource = new Resource({
@@ -7801,7 +7804,10 @@
           "frontend.version": version
           // Custom dimension
         });
-        meterProvider = new MeterProvider({ resource, readers: [createExporter()] });
+        meterProvider = new MeterProvider({
+          resource,
+          readers: [createExporter()]
+        });
         meter = meterProvider.getMeter("motion-sensor");
         metrics.x = meter.createObservableGauge("accelerometer_x");
         metrics.y = meter.createObservableGauge("accelerometer_y");
@@ -7871,9 +7877,9 @@
       function startTracking() {
         trackingActive = true;
         motionHandler = (event) => {
-          const accel = event.acceleration;
-          if (!accel) return;
-          let gForce = Math.sqrt(accel.x ^ 2 + accel.y ^ 2 + accel.z ^ 2) / 9.81;
+          const a = event.accelerationIncludingGravity ?? event.acceleration;
+          if (!a) return;
+          const gForce = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) / 9.81;
           gForceSamples.push(gForce);
         };
         window.addEventListener("devicemotion", motionHandler);
@@ -7890,14 +7896,24 @@
         }, telemetryInterval);
         if (window.DeviceOrientationEvent) {
           orientationInterval = window.setInterval(() => {
-            window.addEventListener("deviceorientation", (event) => {
-              if (gyroDisplay) {
-                gyroDisplay.textContent = `Alpha: ${event.alpha?.toFixed(2)}, Beta: ${event.beta?.toFixed(2)}, Gamma: ${event.gamma?.toFixed(2)}`;
-              }
-              metrics.alpha.addCallback((observer) => observer.observe(event.alpha || 0));
-              metrics.beta.addCallback((observer) => observer.observe(event.beta || 0));
-              metrics.gamma.addCallback((observer) => observer.observe(event.gamma || 0));
-            }, { once: true });
+            window.addEventListener(
+              "deviceorientation",
+              (event) => {
+                if (gyroDisplay) {
+                  gyroDisplay.textContent = `Alpha: ${event.alpha?.toFixed(2)}, Beta: ${event.beta?.toFixed(2)}, Gamma: ${event.gamma?.toFixed(2)}`;
+                }
+                metrics.alpha.addCallback(
+                  (observer) => observer.observe(event.alpha || 0)
+                );
+                metrics.beta.addCallback(
+                  (observer) => observer.observe(event.beta || 0)
+                );
+                metrics.gamma.addCallback(
+                  (observer) => observer.observe(event.gamma || 0)
+                );
+              },
+              { once: true }
+            );
           }, telemetryInterval);
         }
         if (navigator.geolocation) {
@@ -7932,9 +7948,15 @@
             if (gpsDisplay) {
               gpsDisplay.textContent = gpsText;
             }
-            metrics.latitude.addCallback((observer) => observer.observe(filteredLat));
-            metrics.longitude.addCallback((observer) => observer.observe(filteredLon));
-            metrics.speed.addCallback((observer) => observer.observe(gpsMaxSpeed || 0));
+            metrics.latitude.addCallback(
+              (observer) => observer.observe(filteredLat)
+            );
+            metrics.longitude.addCallback(
+              (observer) => observer.observe(filteredLon)
+            );
+            metrics.speed.addCallback(
+              (observer) => observer.observe(gpsMaxSpeed || 0)
+            );
             latestPositions = [];
             gpsMaxSpeed = 0;
           }, telemetryInterval);

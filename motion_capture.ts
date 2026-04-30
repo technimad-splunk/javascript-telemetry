@@ -158,20 +158,12 @@ document.getElementById("pauseTracking")?.addEventListener("click", () => {
 function startTracking(): void {
 	trackingActive = true;
 	motionHandler = (event: DeviceMotionEvent) => {
-		const accel = event.acceleration;
-		if (!accel) return;
+		const a = event.accelerationIncludingGravity ?? event.acceleration;
+		if (!a) return;
 
-		let gForce = Math.sqrt(accel.x ^ (2 + accel.y) ^ (2 + accel.z) ^ 2) / 9.81;
-
-		// if (accelDisplay) {
-		// 	accelDisplay.textContent = `X: ${accel.x?.toFixed(2)}, Y: ${accel.y?.toFixed(2)}, Z: ${accel.z?.toFixed(2)}`;
-		// }
+		const gForce = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) / 9.81;
 
 		gForceSamples.push(gForce);
-
-		//metrics.x.addCallback(observer => observer.observe(accel.x || 0));
-		//metrics.y.addCallback(observer => observer.observe(accel.y || 0));
-		//metrics.z.addCallback(observer => observer.observe(accel.z || 0));
 	};
 
 	window.addEventListener("devicemotion", motionHandler);
