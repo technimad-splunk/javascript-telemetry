@@ -6,6 +6,20 @@ Entries are appended only on a successful or partial verifier PASS.
 
 ## 2026-04-30 — plans/sprint.md (2/2 items, 2 loop(s))
 
+### Improvement
+- Keeps generated output out of version control so diffs stay source-focused and the bundle cannot drift silently from `motion_capture.ts` — `.gitignore:3` (item: Stop committing the compiled bundle)
+- Shrinks the repository and ensures future commits only reflect TypeScript and config changes until CI builds the bundle — `motion_capture.js` (removed from git index) (item: Stop committing the compiled bundle)
+- Clones no longer contain the bundle file, so contributors need an explicit reminder to build once — `README.md` (item: Stop committing the compiled bundle)
+- CI can run `npm run lint` as specified in the sprint plan while reusing the existing TypeScript toolchain — `package.json` (item: Add a GitHub Actions CI/CD workflow)
+- Deployed builds expose the git short SHA as `frontend.version` and UI version without manual bumps — `motion_capture.ts`, `scripts/build-bundle.cjs` (item: Add a GitHub Actions CI/CD workflow)
+- iOS Safari benefits from a versioned script URL; CI ties it to the same SHA as the bundle — `index.html:79` (item: Add a GitHub Actions CI/CD workflow)
+
+### Other
+- Automated validation and Pages publish replace manual version-bump pushes — `.github/workflows/deploy.yml` (item: Add a GitHub Actions CI/CD workflow)
+- Maintainers know how deploy and versioning work without reading the YAML — `README.md` (item: Add a GitHub Actions CI/CD workflow)
+
+## 2026-04-30 — plans/sprint.md (2/2 items, 2 loop(s))
+
 ### Bugfix
 - GPS speed falls back to distance-over-time between fixes when native `coords.speed` is missing, invalid, or zero so iOS devices report movement instead of always 0 — `motion_capture.ts` (item: BUG: GPS location speed is not updated)
 - Retune GPS Kalman filters to near-passthrough (`R: 1, Q: 1e-5`), re-instantiate them on `startTracking` to clear stale state, and force fresh fixes with `maximumAge: 0` so iOS Safari tracks small movements instead of latching to a smoothed/cached position — `motion_capture.ts` (follow-up to BUG: GPS location speed is not updated)
