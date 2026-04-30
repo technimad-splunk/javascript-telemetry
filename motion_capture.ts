@@ -35,7 +35,6 @@ const lonFilter = new KalmanFilter({ R: 0.1, Q: 2 });
 
 let telemetryInterval = 1000;
 let trackingActive = false;
-let gpsInterval: number = 500; //how often we request a gps update.
 let motionHandler: (event: DeviceMotionEvent) => void;
 let orientationHandler: ((e: DeviceOrientationEvent) => void) | null = null;
 let gpsWatchId: number | null = null;
@@ -231,7 +230,7 @@ function startTracking(): void {
 			},
 			{
 				enableHighAccuracy: true,
-				maximumAge: gpsInterval,
+				maximumAge: telemetryInterval,
 				timeout: 10000,
 			},
 		);

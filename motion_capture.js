@@ -7771,7 +7771,6 @@
       var lonFilter = new import_kalmanjs.default({ R: 0.1, Q: 2 });
       var telemetryInterval = 1e3;
       var trackingActive = false;
-      var gpsInterval = 500;
       var motionHandler;
       var orientationHandler = null;
       var gpsWatchId = null;
@@ -7935,7 +7934,7 @@
             },
             {
               enableHighAccuracy: true,
-              maximumAge: gpsInterval,
+              maximumAge: telemetryInterval,
               timeout: 1e4
             }
           );
