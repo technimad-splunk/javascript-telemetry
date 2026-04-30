@@ -7905,7 +7905,7 @@
           if (accelDisplay) {
             accelDisplay.textContent = `g-force: ${gForce?.toFixed(2)}`;
           }
-          metrics.g.addCallback((observer) => observer.observe(gForce));
+          latestG = gForce;
           gForceSamples = [];
         }, telemetryInterval);
         if (window.DeviceOrientationEvent) {
@@ -7951,15 +7951,9 @@
             if (gpsDisplay) {
               gpsDisplay.textContent = gpsText;
             }
-            metrics.latitude.addCallback(
-              (observer) => observer.observe(filteredLat)
-            );
-            metrics.longitude.addCallback(
-              (observer) => observer.observe(filteredLon)
-            );
-            metrics.speed.addCallback(
-              (observer) => observer.observe(gpsMaxSpeed || 0)
-            );
+            latestLat = filteredLat;
+            latestLon = filteredLon;
+            latestSpeed = gpsMaxSpeed || 0;
             latestPositions = [];
             gpsMaxSpeed = 0;
           }, telemetryInterval);
