@@ -39,10 +39,10 @@ A four-agent Cursor subagent setup (orchestrator → planner → builder → ver
 
 ## Further actions
 - [X] Change vtl template to support multiple resource attributes. Currently only service.name is supported
-- [ ] Make data collection interval configurable
+- [X] Make data collection interval configurable (Telemetry Interval input in the web UI)
 - [X] Add inputs for extra attributes (name, number)
 - [X] remove token from frontend
 - [X] Add token as variable to the api gateway config
 - [ ] Save api gateway config to this repo
-- [ ] Prevent device sleep
+- [X] Prevent device sleep (Screen Wake Lock API in `index.html`, re-acquired when the tab becomes visible again)
 - [ ] Calibrate gyroscope on telemetry start
