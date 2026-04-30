@@ -45,6 +45,15 @@ let latestPositions: GeolocationPosition[] = [];
 let gpsMaxSpeed = 0;
 let gpsProcessingInterval: number | null = null;
 
+/** Latest values read by ObservableGauge callbacks (registered once in startTelemetry). */
+let latestG = 0;
+let latestAlpha = 0;
+let latestBeta = 0;
+let latestGamma = 0;
+let latestLat = 0;
+let latestLon = 0;
+let latestSpeed = 0;
+
 let meterProvider = new MeterProvider(); //placeholder for instrumentation after initialisation
 let meter = null; //placeholder for instrumentation after initialisation
 let metrics: SensorData = {};
