@@ -3,7 +3,8 @@
 	"version": "1.0.0",
 	"description": "Motion capture web app with OpenTelemetry integration",
 	"scripts": {
-		"build": "esbuild motion_capture.ts --bundle --outfile=motion_capture.js --format=iife",
+		"lint": "tsc --noEmit",
+		"build": "node scripts/build-bundle.cjs",
 		"start": "npx http-server ."
 	},
 	"devDependencies": {
