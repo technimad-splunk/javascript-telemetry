@@ -7766,7 +7766,8 @@
       var accelDisplay = document.getElementById("accel");
       var gyroDisplay = document.getElementById("gyro");
       var gpsDisplay = document.getElementById("gps");
-      document.getElementById("version").textContent = version;
+      var versionEl = document.getElementById("version");
+      if (versionEl) versionEl.textContent = version;
       var latFilter = new import_kalmanjs.default({ R: 0.1, Q: 2 });
       var lonFilter = new import_kalmanjs.default({ R: 0.1, Q: 2 });
       var telemetryInterval = 1e3;

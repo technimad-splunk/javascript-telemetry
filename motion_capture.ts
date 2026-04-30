@@ -27,7 +27,8 @@ const nameInput = document.getElementById("name") as HTMLInputElement;
 const accelDisplay = document.getElementById("accel");
 const gyroDisplay = document.getElementById("gyro");
 const gpsDisplay = document.getElementById("gps");
-document.getElementById("version").textContent = version;
+const versionEl = document.getElementById("version");
+if (versionEl) versionEl.textContent = version;
 
 // Kalman filters for latitude and longitude
 const latFilter = new KalmanFilter({ R: 0.1, Q: 2 });
