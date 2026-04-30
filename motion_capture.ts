@@ -21,7 +21,7 @@ type SensorData = {
 	speed?: ObservableGauge;
 };
 
-const version = "1.0.16";
+const version = "1.0.17";
 
 const nameInput = document.getElementById("name") as HTMLInputElement;
 const accelDisplay = document.getElementById("accel");
@@ -43,13 +43,18 @@ let telemetryInterval = 1000;
 let trackingActive = false;
 let motionHandler: (event: DeviceMotionEvent) => void;
 let orientationHandler: ((e: DeviceOrientationEvent) => void) | null = null;
-let gpsWatchId: number | null = null;
 let gForceSamples: number[] = [];
 let gForceProcessingInterval: number | null = null;
-let latestPositions: GeolocationPosition[] = [];
-let gpsMaxSpeed = 0;
-let gpsProcessingInterval: number | null = null;
+// iOS Safari's `watchPosition` is unreliable: it commonly fires once and never
+// updates again (Firefox/iOS and Chrome/iOS work). Polling `getCurrentPosition`
+// ourselves at `telemetryInterval` works on all browsers, so we drive GPS via
+// two intervals: one to request a fresh fix, one to refresh the UI/staleness.
+let gpsPollInterval: number | null = null;
+let gpsDisplayInterval: number | null = null;
+let inFlightGpsPoll = false;
 let lastGpsFix: { lat: number; lon: number; timestamp: number } | null = null;
+/** Wall-clock ms (Date.now) of the most recent successful GPS fix. */
+let lastGpsFixAt = 0;
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
 	const earthRadiusM = 6371000;
@@ -252,76 +257,81 @@ function startTracking(): void {
 	}
 
 	if (navigator.geolocation) {
-		gpsWatchId = navigator.geolocation.watchPosition(
-			(position) => {
-				latestPositions.push(position);
+		const handlePosition = (position: GeolocationPosition) => {
+			const lat = position.coords.latitude;
+			const lon = position.coords.longitude;
+			const timestamp = position.timestamp;
+			lastGpsFixAt = Date.now();
 
-				const lat = position.coords.latitude;
-				const lon = position.coords.longitude;
-				const timestamp = position.timestamp;
+			let nativeSpeed = position.coords.speed;
+			if (
+				nativeSpeed == null ||
+				typeof nativeSpeed !== "number" ||
+				isNaN(nativeSpeed) ||
+				nativeSpeed <= 0
+			) {
+				nativeSpeed = null;
+			}
 
-				let nativeSpeed = position.coords.speed;
-				if (
-					nativeSpeed == null ||
-					typeof nativeSpeed !== "number" ||
-					isNaN(nativeSpeed) ||
-					nativeSpeed <= 0
-				) {
-					nativeSpeed = null;
+			let computedMs: number | null = null;
+			if (lastGpsFix !== null) {
+				const dtSec = (timestamp - lastGpsFix.timestamp) / 1000;
+				if (dtSec > 0) {
+					const distM = haversineMeters(lastGpsFix.lat, lastGpsFix.lon, lat, lon);
+					computedMs = distM / dtSec;
 				}
+			}
+			lastGpsFix = { lat, lon, timestamp };
 
-				let computedMs: number | null = null;
-				if (lastGpsFix !== null) {
-					const dtSec = (timestamp - lastGpsFix.timestamp) / 1000;
-					if (dtSec > 0) {
-						const distM = haversineMeters(lastGpsFix.lat, lastGpsFix.lon, lat, lon);
-						computedMs = distM / dtSec;
-					}
-				}
-				lastGpsFix = { lat, lon, timestamp };
-
-				const effectiveMs =
-					nativeSpeed != null ? nativeSpeed : computedMs != null && !isNaN(computedMs)
+			const effectiveMs =
+				nativeSpeed != null
+					? nativeSpeed
+					: computedMs != null && !isNaN(computedMs)
 						? Math.max(0, computedMs)
 						: 0;
 
-				if (effectiveMs > 0) {
-					gpsMaxSpeed = Math.max(gpsMaxSpeed, effectiveMs);
-				}
-			},
-			(error) => {
-				if (gpsDisplay) {
-					gpsDisplay.textContent = `GPS Error: ${error.message}`;
-				}
-			},
-			{
-				enableHighAccuracy: true,
-				maximumAge: 0,
-				timeout: 10000,
-			},
-		);
+			latestLat = latFilter.filter(lat);
+			latestLon = lonFilter.filter(lon);
+			latestSpeed = effectiveMs;
+		};
 
-		gpsProcessingInterval = window.setInterval(() => {
-			if (latestPositions.length === 0) return;
-
-			let filteredLat = null;
-			let filteredLon = null;
-
-			for (const pos of latestPositions) {
-				filteredLat = latFilter.filter(pos.coords.latitude);
-				filteredLon = lonFilter.filter(pos.coords.longitude);
-			}
-			let gpsText = ` Speed: ${gpsMaxSpeed.toFixed(1)} - Lat: ${filteredLat!.toFixed(6)}, Lon: ${filteredLon!.toFixed(6)}`;
+		const handleError = (error: GeolocationPositionError) => {
 			if (gpsDisplay) {
-				gpsDisplay.textContent = gpsText;
+				gpsDisplay.textContent = `GPS Error: ${error.message}`;
 			}
+		};
 
-			latestLat = filteredLat!;
-			latestLon = filteredLon!;
-			latestSpeed = gpsMaxSpeed || 0;
+		const pollOnce = () => {
+			if (inFlightGpsPoll) return;
+			inFlightGpsPoll = true;
+			navigator.geolocation.getCurrentPosition(
+				(position) => {
+					inFlightGpsPoll = false;
+					handlePosition(position);
+				},
+				(error) => {
+					inFlightGpsPoll = false;
+					handleError(error);
+				},
+				{
+					enableHighAccuracy: true,
+					maximumAge: 0,
+					timeout: 10000,
+				},
+			);
+		};
 
-			latestPositions = [];
-			gpsMaxSpeed = 0;
+		pollOnce();
+		gpsPollInterval = window.setInterval(pollOnce, telemetryInterval);
+
+		gpsDisplayInterval = window.setInterval(() => {
+			if (!gpsDisplay) return;
+			if (lastGpsFixAt === 0) {
+				gpsDisplay.textContent = "Waiting for first GPS fix...";
+				return;
+			}
+			const ageSec = (Date.now() - lastGpsFixAt) / 1000;
+			gpsDisplay.textContent = `Speed: ${latestSpeed.toFixed(1)} m/s - Lat: ${latestLat.toFixed(6)}, Lon: ${latestLon.toFixed(6)} (last fix ${ageSec.toFixed(1)}s ago)`;
 		}, telemetryInterval);
 	}
 	startTelemetry();
@@ -336,17 +346,17 @@ async function stopTracking(): Promise<void> {
 		window.removeEventListener("deviceorientation", orientationHandler);
 		orientationHandler = null;
 	}
-	if (gpsWatchId !== null) {
-		navigator.geolocation.clearWatch(gpsWatchId);
-		gpsWatchId = null;
+	if (gpsPollInterval !== null) {
+		clearInterval(gpsPollInterval);
+		gpsPollInterval = null;
 	}
-	if (gpsProcessingInterval !== null) {
-		clearInterval(gpsProcessingInterval);
-		gpsProcessingInterval = null;
+	if (gpsDisplayInterval !== null) {
+		clearInterval(gpsDisplayInterval);
+		gpsDisplayInterval = null;
 	}
-	latestPositions = [];
-	gpsMaxSpeed = 0;
+	inFlightGpsPoll = false;
 	lastGpsFix = null;
+	lastGpsFixAt = 0;
 	if (gForceProcessingInterval !== null) {
 		clearInterval(gForceProcessingInterval);
 		gForceProcessingInterval = null;

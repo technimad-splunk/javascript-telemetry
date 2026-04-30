@@ -9,6 +9,11 @@ Entries are appended only on a successful or partial verifier PASS.
 ### Bugfix
 - GPS speed falls back to distance-over-time between fixes when native `coords.speed` is missing, invalid, or zero so iOS devices report movement instead of always 0 — `motion_capture.ts` (item: BUG: GPS location speed is not updated)
 - Retune GPS Kalman filters to near-passthrough (`R: 1, Q: 1e-5`), re-instantiate them on `startTracking` to clear stale state, and force fresh fixes with `maximumAge: 0` so iOS Safari tracks small movements instead of latching to a smoothed/cached position — `motion_capture.ts` (follow-up to BUG: GPS location speed is not updated)
+- Replace `watchPosition` (which fires once and stops on iOS Safari) with `getCurrentPosition` polled at the telemetry interval, guarded against overlapping in-flight requests, so GPS keeps updating on Safari/iOS — `motion_capture.ts` (follow-up to BUG: GPS location speed is not updated)
+- Discourage HTML/asset caching with cache-control meta tags, a versioned script URL, and a `pageshow`/bfcache reload so freshly deployed versions actually load on iOS Safari — `index.html`
+
+### Enhancement
+- Show "(last fix Xs ago)" in the GPS readout so it's obvious when iOS isn't delivering fresh fixes — `motion_capture.ts`
 
 ### Enhancement
 - Per-axis accelerometer samples are stored, exported as `accelerometer_x` / `accelerometer_y` / `accelerometer_z`, and shown next to g-force in the UI — `motion_capture.ts` (item: Emit the accelerometer X, Y, Z axes)
