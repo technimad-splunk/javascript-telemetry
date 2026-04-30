@@ -7834,8 +7834,8 @@
         metrics.longitude.addCallback((o) => o.observe(latestLon));
         metrics.speed.addCallback((o) => o.observe(latestSpeed));
       }
-      function stopTelemetry() {
-        meterProvider.shutdown();
+      async function stopTelemetry() {
+        await meterProvider.shutdown();
       }
       document.getElementById("requestPermission")?.addEventListener("click", () => {
         if (trackingActive) return;
@@ -7873,16 +7873,16 @@
           }
         }
       });
-      document.getElementById("interval")?.addEventListener("change", (event) => {
+      document.getElementById("interval")?.addEventListener("change", async (event) => {
         telemetryInterval = parseInt(event.target.value) || 1e3;
         if (trackingActive) {
-          stopTracking();
+          await stopTracking();
           startTracking();
         }
       });
-      document.getElementById("pauseTracking")?.addEventListener("click", () => {
+      document.getElementById("pauseTracking")?.addEventListener("click", async () => {
         if (trackingActive) {
-          stopTracking();
+          await stopTracking();
           document.getElementById("pauseTracking").textContent = "Resume Sensors";
         } else {
           startTracking();
@@ -7962,10 +7962,14 @@
         }
         startTelemetry();
       }
-      function stopTracking() {
+      async function stopTracking() {
         trackingActive = false;
         if (motionHandler) {
           window.removeEventListener("devicemotion", motionHandler);
+        }
+        if (orientationHandler) {
+          window.removeEventListener("deviceorientation", orientationHandler);
+          orientationHandler = null;
         }
         if (gpsWatchId !== null) {
           navigator.geolocation.clearWatch(gpsWatchId);
@@ -7982,7 +7986,7 @@
           gForceProcessingInterval = null;
         }
         gForceSamples = [];
-        stopTelemetry();
+        await stopTelemetry();
       }
     }
   });

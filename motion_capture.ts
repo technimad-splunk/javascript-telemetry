@@ -106,8 +106,8 @@ function startTelemetry() {
 	metrics.speed!.addCallback((o) => o.observe(latestSpeed));
 }
 
-function stopTelemetry() {
-	meterProvider.shutdown();
+async function stopTelemetry(): Promise<void> {
+	await meterProvider.shutdown();
 }
 
 document.getElementById("requestPermission")?.addEventListener("click", () => {
@@ -155,18 +155,18 @@ document.getElementById("requestPermission")?.addEventListener("click", () => {
 	}
 });
 
-document.getElementById("interval")?.addEventListener("change", (event) => {
+document.getElementById("interval")?.addEventListener("change", async (event) => {
 	telemetryInterval =
 		parseInt((event.target as HTMLInputElement).value) || 1000;
 	if (trackingActive) {
-		stopTracking();
+		await stopTracking();
 		startTracking();
 	}
 });
 
-document.getElementById("pauseTracking")?.addEventListener("click", () => {
+document.getElementById("pauseTracking")?.addEventListener("click", async () => {
 	if (trackingActive) {
-		stopTracking();
+		await stopTracking();
 		document.getElementById("pauseTracking")!.textContent = "Resume Sensors";
 	} else {
 		startTracking();
@@ -193,7 +193,7 @@ function startTracking(): void {
 		if (gForceSamples.length === 0) return;
 		let max_gForce = Math.max(...gForceSamples.map((v) => v));
 		let min_gForce = Math.min(...gForceSamples.map((v) => v));
-		let gForce = min_gForce * -1 > max_gForce ? min_gForce : max_gForce; //choose whichever is further away from 0.
+		let gForce = min_gForce * -1 > max_gForce ? min_gForce : max_gForce;
 
 		if (accelDisplay) {
 			accelDisplay.textContent = `g-force: ${gForce?.toFixed(2)}`;
@@ -219,10 +219,8 @@ function startTracking(): void {
 	if (navigator.geolocation) {
 		gpsWatchId = navigator.geolocation.watchPosition(
 			(position) => {
-				// Collect positions during telemetryInterval
 				latestPositions.push(position);
 
-				// Update max speed if valid
 				const speed = position.coords.speed;
 				if (typeof speed === "number" && !isNaN(speed)) {
 					gpsMaxSpeed = Math.max(gpsMaxSpeed, speed);
@@ -240,11 +238,9 @@ function startTracking(): void {
 			},
 		);
 
-		// Every telemetry interval, process and emit
 		gpsProcessingInterval = window.setInterval(() => {
 			if (latestPositions.length === 0) return;
 
-			// Feed all positions one by one through the filter
 			let filteredLat = null;
 			let filteredLon = null;
 
@@ -268,10 +264,14 @@ function startTracking(): void {
 	startTelemetry();
 }
 
-function stopTracking(): void {
+async function stopTracking(): Promise<void> {
 	trackingActive = false;
 	if (motionHandler) {
 		window.removeEventListener("devicemotion", motionHandler);
+	}
+	if (orientationHandler) {
+		window.removeEventListener("deviceorientation", orientationHandler);
+		orientationHandler = null;
 	}
 	if (gpsWatchId !== null) {
 		navigator.geolocation.clearWatch(gpsWatchId);
@@ -281,7 +281,6 @@ function stopTracking(): void {
 		clearInterval(gpsProcessingInterval);
 		gpsProcessingInterval = null;
 	}
-	// Reset the GPS positions and speed buffers
 	latestPositions = [];
 	gpsMaxSpeed = 0;
 	if (gForceProcessingInterval !== null) {
@@ -289,5 +288,5 @@ function stopTracking(): void {
 		gForceProcessingInterval = null;
 	}
 	gForceSamples = [];
-	stopTelemetry();
+	await stopTelemetry();
 }
