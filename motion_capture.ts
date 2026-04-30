@@ -35,9 +35,9 @@ const lonFilter = new KalmanFilter({ R: 0.1, Q: 2 });
 
 let telemetryInterval = 1000;
 let trackingActive = false;
-let orientationInterval: number;
 let gpsInterval: number = 500; //how often we request a gps update.
 let motionHandler: (event: DeviceMotionEvent) => void;
+let orientationHandler: ((e: DeviceOrientationEvent) => void) | null = null;
 let gpsWatchId: number | null = null;
 let gForceSamples: number[] = [];
 let gForceProcessingInterval: number | null = null;
@@ -200,26 +200,16 @@ function startTracking(): void {
 	}, telemetryInterval);
 
 	if (window.DeviceOrientationEvent) {
-		orientationInterval = window.setInterval(() => {
-			window.addEventListener(
-				"deviceorientation",
-				(event) => {
-					if (gyroDisplay) {
-						gyroDisplay.textContent = `Alpha: ${event.alpha?.toFixed(2)}, Beta: ${event.beta?.toFixed(2)}, Gamma: ${event.gamma?.toFixed(2)}`;
-					}
-					metrics.alpha.addCallback((observer) =>
-						observer.observe(event.alpha || 0),
-					);
-					metrics.beta.addCallback((observer) =>
-						observer.observe(event.beta || 0),
-					);
-					metrics.gamma.addCallback((observer) =>
-						observer.observe(event.gamma || 0),
-					);
-				},
-				{ once: true },
-			);
-		}, telemetryInterval);
+		orientationHandler = (e: DeviceOrientationEvent) => {
+			latestAlpha = e.alpha ?? 0;
+			latestBeta = e.beta ?? 0;
+			latestGamma = e.gamma ?? 0;
+
+			if (gyroDisplay) {
+				gyroDisplay.textContent = `Alpha: ${latestAlpha.toFixed(2)}, Beta: ${latestBeta.toFixed(2)}, Gamma: ${latestGamma.toFixed(2)}`;
+			}
+		};
+		window.addEventListener("deviceorientation", orientationHandler);
 	}
 
 	if (navigator.geolocation) {
@@ -286,7 +276,6 @@ function stopTracking(): void {
 	if (motionHandler) {
 		window.removeEventListener("devicemotion", motionHandler);
 	}
-	clearInterval(orientationInterval);
 	if (gpsWatchId !== null) {
 		navigator.geolocation.clearWatch(gpsWatchId);
 		gpsWatchId = null;

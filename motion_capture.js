@@ -7771,9 +7771,9 @@
       var lonFilter = new import_kalmanjs.default({ R: 0.1, Q: 2 });
       var telemetryInterval = 1e3;
       var trackingActive = false;
-      var orientationInterval;
       var gpsInterval = 500;
       var motionHandler;
+      var orientationHandler = null;
       var gpsWatchId = null;
       var gForceSamples = [];
       var gForceProcessingInterval = null;
@@ -7909,26 +7909,15 @@
           gForceSamples = [];
         }, telemetryInterval);
         if (window.DeviceOrientationEvent) {
-          orientationInterval = window.setInterval(() => {
-            window.addEventListener(
-              "deviceorientation",
-              (event) => {
-                if (gyroDisplay) {
-                  gyroDisplay.textContent = `Alpha: ${event.alpha?.toFixed(2)}, Beta: ${event.beta?.toFixed(2)}, Gamma: ${event.gamma?.toFixed(2)}`;
-                }
-                metrics.alpha.addCallback(
-                  (observer) => observer.observe(event.alpha || 0)
-                );
-                metrics.beta.addCallback(
-                  (observer) => observer.observe(event.beta || 0)
-                );
-                metrics.gamma.addCallback(
-                  (observer) => observer.observe(event.gamma || 0)
-                );
-              },
-              { once: true }
-            );
-          }, telemetryInterval);
+          orientationHandler = (e) => {
+            latestAlpha = e.alpha ?? 0;
+            latestBeta = e.beta ?? 0;
+            latestGamma = e.gamma ?? 0;
+            if (gyroDisplay) {
+              gyroDisplay.textContent = `Alpha: ${latestAlpha.toFixed(2)}, Beta: ${latestBeta.toFixed(2)}, Gamma: ${latestGamma.toFixed(2)}`;
+            }
+          };
+          window.addEventListener("deviceorientation", orientationHandler);
         }
         if (navigator.geolocation) {
           gpsWatchId = navigator.geolocation.watchPosition(
@@ -7982,7 +7971,6 @@
         if (motionHandler) {
           window.removeEventListener("devicemotion", motionHandler);
         }
-        clearInterval(orientationInterval);
         if (gpsWatchId !== null) {
           navigator.geolocation.clearWatch(gpsWatchId);
           gpsWatchId = null;
