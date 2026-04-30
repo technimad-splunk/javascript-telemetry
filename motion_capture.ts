@@ -96,6 +96,14 @@ function startTelemetry() {
 	metrics.latitude = meter.createObservableGauge("gps_latitude");
 	metrics.longitude = meter.createObservableGauge("gps_longitude");
 	metrics.speed = meter.createObservableGauge("gps_speed");
+
+	metrics.g!.addCallback((o) => o.observe(latestG));
+	metrics.alpha!.addCallback((o) => o.observe(latestAlpha));
+	metrics.beta!.addCallback((o) => o.observe(latestBeta));
+	metrics.gamma!.addCallback((o) => o.observe(latestGamma));
+	metrics.latitude!.addCallback((o) => o.observe(latestLat));
+	metrics.longitude!.addCallback((o) => o.observe(latestLon));
+	metrics.speed!.addCallback((o) => o.observe(latestSpeed));
 }
 
 function stopTelemetry() {
