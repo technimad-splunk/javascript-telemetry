@@ -1,5 +1,9 @@
 # OpenTelemetry for Phone Sensors
 
+## Local development
+
+After `npm install`, run `npm run build` once to generate `motion_capture.js` from `motion_capture.ts` (esbuild). The bundle is gitignored. Then use `npm start` or any static server in the repo root.
+
 This is a PoC to test the feasibility to get telemetry data off a phone and send it via OpenTelemetry.
 To cater to easy distribution, this is implemented in a web app.
 The telemetry to collect consist of the accelerometer, gyroscope and gps.
